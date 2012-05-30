@@ -2,13 +2,8 @@ Mongo-PHP-ORM
 =============
 
     This is incarnation 2 of Homebase framework mongo ORM.
-    Product is in beta. Stabilisation Stage
-    It is not used in production yet.
+    Product is in beta/stabilisation stage. Not used in production yet.
     It still depends on some Homebase framework classes and functions
-
-DESCRIPTION
-===========
-
 
 # Key Features
 * simple **compact** clutter-less **syntax**
@@ -30,7 +25,7 @@ DESCRIPTION
 
 # DETAILS
 * All our primary keys are ints. 
-    We do not like mongo primary keys, we use our sequence generator. Speed is good enough. For batch jobs we reserve blocks of IDs.
+  * We do not like mongo primary keys, we use our sequence generator. Speed is good enough. For batch jobs we reserve blocks of IDs.
 * Several Layers of Abstraction:
   * Mongo Wrapper (M_Collection)
     * adds new shortcut functions, simlification of existing mongo functions
