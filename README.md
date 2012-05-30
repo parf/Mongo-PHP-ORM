@@ -12,8 +12,6 @@ DESCRIPTION
 ===========
 Mongo-PHP-ORM is standalone `not yet` php framework.
 
-# All our primary keys are ints. 
-We do not like mongo primary keys, we use our sequence generator. Speed is good enough. For batch jobs we reserve blocks of IDs.
 
 # Key Features
 * simple **compact** clutter-less **syntax**
@@ -34,6 +32,8 @@ We do not like mongo primary keys, we use our sequence generator. Speed is good 
 * almost no overhead, written with performance in mind
 
 # DETAILS
+* All our primary keys are ints. 
+    We do not like mongo primary keys, we use our sequence generator. Speed is good enough. For batch jobs we reserve blocks of IDs.
 * Several Layers of Abstraction:
   * Mongo Wrapper (M_Collection)
     * adds new shortcut functions, simlification of existing mongo functions
