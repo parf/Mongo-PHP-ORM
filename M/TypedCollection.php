@@ -489,7 +489,7 @@ class M_TypedCollection extends M_Collection {
     // add one or more values to set
     function add($q, $field /* value, value, value */) {
         $a = func_get_args();
-        $T = $this->type[$a[1].".*"];
+        $T = isset($this->type[$a[1].".*"]) ? $this->type[$a[1].".*"] : null;
         if ($T) {
             foreach($a as $k => &$_)
                 if ($k > 1)

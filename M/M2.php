@@ -158,12 +158,15 @@ class M {
     }
 
     // serverDB is "db" or "server:db"
-    static function listCollections($serverDB) { # [ "db.col", "db.col", ... ]
-        list($server, $db)=explode(":", $serverDB);
-        if (! $db)
-            list($server, $db)=["", $server];
+    static function listCollections($sdb) { # [ "db.col", "db.col", ... ]
+        $server = "";
+        $db = $sdb;
+        if ($p=strpos($sdb, ":")) {
+            $server = substr($sdb, 0, $p+1);
+            $db     = substr($sdb, $p+1);
+        }
         $a=[];
-        foreach(M::i($server ? "$server:" : "")->__get($db)->listCollections() as $c)
+        foreach(M::i($server)->__get($db)->listCollections() as $c)
             $a[]=$db.".".$c->getName();
         return $a;
     }
