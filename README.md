@@ -5,20 +5,21 @@ Mongo-PHP-ORM
     Product is in beta/stabilisation stage. Not used in production yet.
     It still depends on some Homebase framework classes and functions
 
-# Key Features
+# FEATURES
 * simple **compact** clutter-less **syntax**
-* maps mongo records to objects
-* you can extend this objects
+* low level and ORM level extensions
+  * maps mongo records to objects
+  * you can extend this objects
   * add methods, ( getters, setters ), calculated fields
-* keep your business logic inside your objects
-* lots of useful functions and shortcuts
-  * group by, mix/max/avg/sum/...
-  * index enforcement, mysql migration
+  * keep your business logic inside your objects
 * **relation** support (has_one, has_many)
 * field **aliases** ( long keys be unnessecary burden for bson based storage)
 * **type support** 
   * basic and complex types (name, ip, phone, email, url, ...)
   * you can extend/overload our classes
+* lots of useful functions and shortcuts
+  * group by, mix/max/avg/sum/...
+  * index enforcement, mysql migration
 * declarative and easy to support config
   * configure autoload fields, in-memory entity caching
 * almost no overhead, written with performance in mind
@@ -31,7 +32,7 @@ Mongo-PHP-ORM
     * adds new shortcut functions, simlification of existing mongo functions
   * M_TypedCollection
     * type support for mongo, supports basic and complex/custom classes
-  * M_Object
+  * M_Object (ORM level)
     * default implementation / base class for your objects
     * you may extend it or use default implementation
   * M_Type
