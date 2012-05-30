@@ -1,0 +1,51 @@
+m2:
+  connect: mongo
+  alias:
+    Base: test.base
+    Typed: test.typed
+
+  # test collection
+  test:
+
+    # untyped collection
+    base:
+      parf: custom-param
+      field-alias:
+        name_alias: name
+        name-alias: name
+
+    no_autoload:
+      autoload: false
+
+    # _id only autoload 
+    id_autoload:
+      autoload: "_id"
+
+    # specific fields autoload
+    sf_autoload:
+      autoload: "name age mmm"
+
+    typed:
+      field:
+        int:int
+        arr:array
+        t.s:string
+        t.i:int
+        t.a:array
+        t.f:float
+        t.b:bool
+        t.d:date
+        ai.*:int
+        as.*:string
+        en: [name, age, sex]
+        map: 
+            y: yksi
+            ka: kaksi
+            ko: kolme
+        date: date
+        datetime: DateTime
+        ph: phone
+        ip: ip
+        usd: price
+        dt: datetime
+        

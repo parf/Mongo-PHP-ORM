@@ -1,0 +1,507 @@
+#!/bin/env spartan-test
+
+// HOMEBASE FRAMEWORK
+// Mongo ORM v2 test
+
+; M2::load();
+
+count(M::listDatabases())>0;
+#=true
+
+; M("test.sequence")->drop();
+; $a_no=M("test.no_autoload");
+; $a_no->drop();
+; $a_id=M("test.id_autoload");
+; $a_id->drop();
+; $a_sf=M("test.sf_autoload");
+; $a_sf->drop();
+; M::Base()->drop();
+; M::Typed()->drop();
+
+// autoload testing - prepare collections
+; $a_no->insert(["_id" => 1, "name" => "Parf", "age" => 38]);
+; $a_id->insert(["_id" => 1, "name" => "Vikki", "age" => 0.6]);
+; $a_sf->insert(["_id" => 1, "name" => "Ted", "age" => 6, "sex" => "male"]);  # some fields
+
+// no auto load
+; $a_no= $a_no->go(1);
+$a_no->v();
+#={"id":1,"D":[],"loaded":false}
+$a_no->get("age");
+#={"age":38}
+$a_no->v();
+#={"id":1,"D":{"_id":1,"age":38},"loaded":false}
+$a_no->name;
+#="Parf"
+$a_no->v();
+#={"id":1,"D":{"_id":1,"name":"Parf","age":38},"loaded":true}
+
+// _id load
+; $a_id= $a_id(1);
+$a_id->v();
+#={"id":1,"D":{"_id":1},"loaded":"a"}
+$a_id->id;  // object ID
+#=1
+$a_id->_id;  // mongo _id
+#=1
+$a_id->v();
+#={"id":1,"D":{"_id":1},"loaded":"a"}
+$a_id->name;
+#="Vikki"
+$a_id->v();
+#={"id":1,"D":{"_id":1,"name":"Vikki","age":0.6},"loaded":true}
+
+// specific fields load
+$a_sf->config("autoload");
+#="name age mmm"
+; $a_sf= $a_sf(1);
+$a_sf->v();
+#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+$a_sf->name;
+#="Ted"
+$a_sf->v();
+#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+$a_sf->age;
+#=6
+$a_sf->v();
+#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+$a_sf->mmm;  # autoloaded but non-exiting field
+#=null
+$a_sf->v();
+#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+$a_sf->sex;  # non autloaded field
+#="male"
+$a_sf->v();
+#={"id":1,"D":{"_id":1,"sex":"male","name":"Ted","age":6},"loaded":true}
+
+// untyped operation testing
+; M::Base()->insert(["_id" => 1, "name" => "base"]);
+; M::Typed()->insert(["_id" => 1]);
+
+in_array("test.no_autoload", M::listCollections("test"));
+#=true
+
+// basic functionality
+M();
+#={"class":"Mongo","0":{"connected":true,"status":null}}
+M()->test;
+#={"class":"MongoDB","0":{"w":1,"wtimeout":10000}}
+M("test.autoload");
+#={"class":"M_Collection","0":{"name":"test.autoload","sdc":"test.autoload","server":""}}
+
+$U=M::Base();
+#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+$U->insert(["_id" => 100, "name" => "Parf", "test" => "yes", "wol" => 0.1, "x" => ["y" => "xy"]]);
+#=100
+$U->create(["_id" => 101, "name" => "Ted", "test" => "yes"]);
+#={"class":"M_Object","0":{"id":101}}
+$U->remove(102); // for not found exceptions
+#=true
+
+$U->one(100);
+#=100
+$U->one(100, "wol");
+#=0.1
+$U->one(100, "x.y");
+#="xy"
+$U->f(100, "wol name");
+#={"100":{"_id":100,"name":"Parf","wol":0.1}}
+$U[100];
+#={"_id":100,"name":"Parf","test":"yes","wol":0.1,"x":{"y":"xy"}}
+$U->config("parf");
+#="custom-param"
+
+$U->f(100, "name");
+#={"100":{"_id":100,"name":"Parf"}}
+$U->f(101);
+#={"101":{"_id":101,"name":"Ted","test":"yes"}}
+$U->f(["_id" => ['$gt' => 99, '$lt' => 102]]);
+#={"100":{"_id":100,"name":"Parf","test":"yes","wol":0.1,"x":{"y":"xy"}},"101":{"_id":101,"name":"Ted","test":"yes"}}
+
+isset($U[101]);
+#=true
+
+isset($U[102]);
+#=false
+
+$U[101]=["name" => "slash"];
+#={"name":"slash"}
+
+$U->find_in([100,101,102],"name");
+#={"100":{"_id":100,"name":"Parf"},"101":{"_id":101,"name":"slash"}}
+
+$U->last_id();
+#=101
+
+; $U->insert(["_id" => 1, "i" => 0, "f" => 0.0]);
+; $U->inc(1, "i");
+; $U->inc(1, "f", 0.5);
+; $U->push(1, "a", "parf");
+; $U->push(1, "a", "parf");
+; $U->addToSet(1, "a", "parf");
+; $U->addToSet(1, "a", "parf");
+; $U->push(1, "a", "test");
+
+; $U->add(1, "a1", "one");
+; $U->add(1, "a2", "one", 3, 3.4);
+
+count($U[100]);
+#=5
+
+$U;
+#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+
+$U[1];
+#={"_id":1,"a":["parf","parf","test"],"a1":["one"],"a2":["one",3,3.4],"f":0.5,"i":1,"name":"base"}
+
+// simple goto
+$U(1);
+#={"class":"M_Object","0":{"id":1}}
+
+# M_OBJECT 
+
+; $parf=M::Base(100);
+$parf->name;
+#="Parf"
+
+$parf=$U->find_o(100)[100];
+#={"class":"M_Object","0":{"id":100}}
+
+// toString
+"".$parf;
+#="test.base[100]"
+
+
+# no autoload
+; $u101=M::Base(-101);
+$u101->name;
+#="Ted"
+
+M::Base(102); // NotFound
+#={"class":"M_Object","0":{"id":102}}
+
+M::Base(-102); // Ok
+#={"class":"M_Object","0":{"id":102}}
+
+M::Base(-102)->name;
+#=["NotFoundException","test.base[102]",0]
+
+$u101->xxx="check";
+#="check"
+
+# get all fields shortcut
+$u101->_;
+#={"_id":101,"name":"slash","test":"yes","xxx":"check"}
+
+
+; $u=M::Base(100);
+$u->_;  // all fields
+#={"_id":100,"name":"Parf","test":"yes","wol":0.1,"x":{"y":"xy"}}
+$u["x"];
+#={"y":"xy"}
+; $u->x=123;
+$u->reload()->x;
+#=123
+$u["a.b.c"]=[1,2,3];
+#=[1,2,3]
+$u->reload()->_;
+#={"_id":100,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1,"x":123}
+$u["a.b.c"];
+#=[1,2,3]
+$u["a.b"];
+#={"c":[1,2,3]}
+$u->a;
+#={"b":{"c":[1,2,3]}}
+; $u->y="y";
+; $u->z=true;
+$u->get("x y z");
+#={"x":123,"y":"y","z":true}
+
+# 3 syntax of unset
+; $u->_unset("x");
+; $u->_unset(["y"]);
+; $u->_unset(["z"=>1]);
+$u->get("x y z");
+#={"x":null,"y":null,"z":null}
+
+# $op testing
+; $u->addToSet("x", "parf");
+; $u->addToSet("x", "test");
+; $u->addToSet("x", "parf");
+
+$u->x;
+#=["parf","test"]
+#
+### unset($u["x"]);  << no unset in eval !!
+; $u->_unset("x");
+$u->inc("x");
+#={"class":"M_Object","0":{"id":100}}
+$u->x;
+#=1
+; $u->inc("x", 5);
+$u->x;
+#=6
+; $u->dec("x");
+$u->x;
+#=5
+; $u->dec("x", 2);
+$u->x;
+#=3
+
+; $u->push("y", 1);
+$u->y;
+#=[1]
+; $u->push(["y" => 1, "z" => "z"]);
+$u->get("y z");
+#={"y":[1,1],"z":["z"]}
+; $u->push(["y" => 2, "z" => "z"]);
+$u->get("y z");
+#={"y":[1,1,2],"z":["z","z"]}
+; $u->push(["y" => 1, "z" => "y"]);
+; $u->push(["y" => 3, "z" => "Z2"]);
+$u->get("y z");
+#={"y":[1,1,2,1,3],"z":["z","z","y","Z2"]}
+; $u->pull("z", "z");
+$u->z;
+#=["y","Z2"]
+; $u->pop("z");
+$u->z;
+#=["y"]
+
+; $u->rename(["z" => "zz"]);
+$u->get("zz z");
+#={"zz":["y"],"z":null}
+#
+$u->v();
+#={"id":100,"D":{"_id":100,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1,"x":3,"y":[1,1,2,1,3],"zz":["y"]},"loaded":true}
+
+$u->C();
+#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+
+$u->json();
+#="{\"_id\":100,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1,\"x\":3,\"y\":[1,1,2,1,3],\"zz\":[\"y\"]}"
+
+
+# FIELD ALIAS test
+$u->name = "Parf";
+#="Parf"
+$u->name;
+#="Parf"
+$u->name_alias;
+#="Parf"
+$u->name;
+#="Parf"
+$u->name_alias = "Alias"; 
+#="Alias"
+$u->name;
+#="Parf"
+$u->name_alias;
+#="Alias"
+$u["name-alias"];
+#="Parf"
+
+# ---------------------------------------------------------------------------------
+# Typed collections
+
+; $T=M::Typed();
+$T->type;
+#={"int":"int","arr":"array","t.s":"string","t.i":"int","t.a":"array","t.f":"float","t.b":"bool","t.d":"date","ai.*":"int","as.*":"string","en":["name","age","sex"],"map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"date":"date","datetime":"DateTime","ph":"phone","ip":"ip","usd":"price","dt":"datetime","_id":"int"}
+
+; $T->insert( ["_id" => 2, "int" => 1] );
+; $T->insert( ["_id" => 3, "int" => "a"] );
+; $T->insert( ["_id" => 4, "int" => 1.1] );
+; $T->insert( ["_id" => 5, "int" => true] );
+; $T->insert( ["_id" => 6, "int" => false] );
+
+
+$T->find_in([2,3,4,5,6]);
+#={"2":{"_id":2,"int":1},"3":{"_id":3,"int":0},"4":{"_id":4,"int":1},"5":{"_id":5,"int":1},"6":{"_id":6,"int":0}}
+
+; $T->insert( ["_id" => 7, "arr" => ["a"] ] );
+
+## spartan test can't recognize PHP ERRORS & NOTICES SO FAR
+## $T->insert( ["_id" => 8, "arr" => "err"] );
+##
+
+; $T->insert( ["_id" => 9, "arr" => [1]] );
+
+$T->find_in([7,8,9]);
+#={"7":{"_id":7,"arr":["a"]},"9":{"_id":9,"arr":[1]}}
+
+; $T->dot_insert( ["_id" => 10, "t.s" => 1, "t.i" => "str", "t.f" => 1.01, "t.d" => "1973-07-04"] );
+$T[10];
+#={"_id":10,"t":{"s":"1","i":0,"f":1.01,"d":110606400}}
+
+// Date test
+date("Y-m-d", $T(10)["t.d"]);
+#="1973-07-04"
+
+; $T->set(1, "int", "abc");
+$T[1]["int"];
+#=0
+; $T->inc(1, "int", "1");
+$T[1]["int"];
+#=1
+; $T->inc(1, "int", 1.9);
+$T[1]["int"];
+#=2
+
+# *:int
+; $T->push(1, "ai", "abc")->push(1, ["ai" => 0])->push(1, "ai", 1.1);
+$T[1]["ai"];
+#=[0,0,1]
+
+# *:string
+; $T->push(1, "as", "abc")->push(1, "as", 0)->push(1, "as", 1.1);
+$T[1]["as"];
+#=["abc","0","1.1"]
+
+; $T->add(1, "aaa.b.c", 1, 2, 3);
+$T(1)->aaa;
+#={"b":{"c":[1,2,3]}}
+
+# SEQUENCE
+; $b = M::Base();
+$b1=$b->insert(["a" => 1]);
+#=102
+
+$b2=$b->insert(["c" => 2]);
+#=103
+
+$b($b1)->_;
+#={"_id":102,"a":1}
+
+$b[$b2];
+#={"_id":103,"c":2}
+
+// ENUMS - prederined hashes
+get_class($T);
+#="M_TypedCollection"
+$T->type["en"];
+#=["name","age","sex"]
+; $t=$T(1);
+$t->en=1;
+#=1
+$t->en;
+#=1
+$t->en=4;
+#=["InvalidArgumentException","bad enum key: 4 type: [ENUM]",0]
+$t->en;
+#=1
+$t;
+#={"class":"M_Object","0":{"id":1}}
+$t->_en; // Magic Field
+#="age"
+
+$t->en="name";
+#=["InvalidArgumentException","bad enum key: name type: [ENUM]",0]
+$t->en;
+#=1
+$t->_en="name";
+#="name"
+$t->en;
+#=0
+$t->_en="age";
+#="age"
+$t->en;
+#=1
+$t->en=["a"];
+#=["InvalidArgumentException","scalar expected value type: string type: [ENUM]",0]
+
+# ENUM AS MAP
+$T->type["map"];
+#={"y":"yksi","ka":"kaksi","ko":"kolme"}
+$t->map="kolme";
+#=["InvalidArgumentException","bad enum key: kolme type: [ENUM]",0]
+$t->map='ko';
+#="ko"
+$t->map;
+#="ko"
+$t->_map;
+#="kolme"
+; $t->map="ka";
+$t->map;
+#="ka"
+$t->_map;  // Magic Field
+#="kaksi"
+$t->map="no-such-val";
+#=["InvalidArgumentException","bad enum key: no-such-val type: [ENUM]",0]
+$t->_map="nsv";
+#=["InvalidArgumentException","bad enum VALUE: nsv",0]
+$t->_map="ka";
+#=["InvalidArgumentException","bad enum VALUE: ka",0]
+$t->_map="kaksi";
+#="kaksi"
+$t->map;
+#="ka"
+$t->_map;
+#="kaksi"
+
+; $t->date = 1337973872; // time();
+date("Y-m-d H:i:s", 1337973872);
+#="2012-05-25 15:24:32"
+date("Y-m-d H:i:s", $t->date);
+#="2012-05-25 00:00:00"
+$t->date;
+#=1337918400
+$t->_date;
+#="May 25, 2012"
+$t->_date="05/25/2012";
+#="05\/25\/2012"
+$t->date;
+#=1337918400
+$t->_date;
+#="May 25, 2012"
+; $t->datetime = 1337973872; // time();
+$t->datetime;
+#=1337973872
+$t->_datetime;
+#="May 25, 2012 03:24PM"
+
+# PHONE FIELD SUPPORT
+$T->type["ph"];
+#="phone"
+; $t->ph=" 1 (617) 372 0000";
+$t->ph;
+#=16173720000
+; $t->ph="011 1 (617) 372 0000";
+$t->ph;
+#=16173720000
+; $t->ph="617-372-0000";
+$t->ph;
+#=16173720000
+$t->_ph;
+#="1-617-372-0000"
+#
+# Bahamas (non US phone)
+; $t->ph="12421221212";
+$t->_ph;
+#="+1242 122-1212"
+#
+; $t->ph="74957260000";
+$t->_ph;
+#="+7 495-726-0000"
+; $t->ph="+7 495 7260000";
+$t->_ph;
+#="+7 495-726-0000"
+; $t->ph="+49 221 828 1234 ";
+$t->_ph;
+#="+49 221-828-1234"
+
+; $t->ph="+86 21 5049 1234";
+$t->_ph;
+#="+86 215-049-1234"
+; $t->ph="0086-755-83979813";
+$t->_ph;
+#="+86 7558-397-9813"
+
+// IP field type
+
+; $t->ip = "192.168.1.1";
+$t->ip;
+#=3232235777
+$t->_ip;
+#="192.168.1.1"
+; $t->ip=3232235778;
+$t->_ip;
+#="192.168.1.2"
