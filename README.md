@@ -1,10 +1,9 @@
-Mongo-PHP-ORM
-=============
+# Mongo-PHP-ORM (M2)
 
     This is incarnation 2 of Homebase framework mongo ORM.
     Product is in beta/stabilisation stage. Not used in production yet.
     It still depends on some Homebase framework classes and functions
-    Soon we'll provide standalone tested library
+    By Jun 7 2012 we'll provide standalone version
 
 # FEATURES (most important)
 * **ORM** with relations, calc fields, ...
