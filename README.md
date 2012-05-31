@@ -6,6 +6,11 @@ Mongo-PHP-ORM
     It still depends on some Homebase framework classes and functions
     Soon we'll provide standalone tested library
 
+# FEATURES (most important)
+* **ORM** with calc fields, relationships
+* **Type support** (complex/custom type support)
+
+
 # FEATURES
 * simple **compact** clutter-less **syntax**
 * low level and **ORM** level extensions

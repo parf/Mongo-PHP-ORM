@@ -11,6 +11,16 @@
 count(M::listDatabases())>0;
 #=true
 
+M();
+#={"class":"Mongo","0":{"connected":true,"status":null}}
+M("test.sequence");
+#={"class":"M_Collection","0":{"name":"test.sequence","sdc":"test.sequence","server":""}}
+M::Base();
+#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+M::Base(1);
+#={"class":"M_Object","0":{"id":1}}
+
+
 ; M("test.sequence")->drop();
 ; $a_no=M("test.no_autoload");
 ; $a_no->drop();

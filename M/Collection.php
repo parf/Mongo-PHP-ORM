@@ -140,7 +140,7 @@ class M_Collection implements ArrayAccess {
     // 2  fields - hash f1  => f2
     // 3+ fields - hash f1  => {f1, f2:, ....}
     // Ex: M("user.user")->hash(0, "_id name")   => hash {_id => name}
-    //     M("user.user")->hash(0, "email name") => hash {_id => name}
+    //     M("user.user")->hash(0, "email name") => hash {email => name}
     //     M("user.user")->hash(0, "email")      => hash {email => {....}}
     function hash($query, $fields) { # hash K=>V | K => [V,V,..]
         if(! $query) $query=array();
@@ -382,7 +382,7 @@ class M_Collection implements ArrayAccess {
     // see also: one, offsetGet (M::Alias()[$where])
     // Ex: M("account.account")->findOne(1006)
     // Ex: M("account.account")->findOne(1006, "balance date_created")
-    function findOne($query, $fields="") { # hash | M_Object
+    function findOne($query, $fields="") { # data
         $query=$this->_query($query);
         $fields=$this->_fields($fields);
         return $this->MC->findOne($query, $fields);

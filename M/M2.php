@@ -6,12 +6,12 @@
 Implements:
 
 *
-* mongo severs switching (see M("server"), M("server:db.collection")
+* mongo severs switching (see M("server:"), M("server:db.collection")
 * wrapper for M_Collection, M_Object
 * Aliases support
 *
 
-M($x) is an alias to M::mongo(x)
+M($x) is an alias to M::i(x)
 
 M()                  => Mongo (default server)
 M("server:")         => Mongo
@@ -23,23 +23,17 @@ M::$alias()          => M_Collection   // reccomended
 
 M("server:db.name", $id)    => M_Object
 M("db.name", $id)    => M_Object
-M("db.name", $id)    => M_Object
+M("alias", $id)      => M_Object
 M::$alias($id)       => M_Object
 
-Aliases (first letter must be uppercased!)
-mongo:
-  alias:
-    Account: account.account
-    User:    user.user
-
-Server(s) connection configuration
+Aliases (case sensitive)
 mongo:
   connect: connect_string      see  http://www.mongodb.org/display/DOCS/Connections
-
   alias:
     Alias: db.collection
     Alias: server:db.collection
-    Person: reg.person
+    Account: account.account
+    User:    user.user
 
 mongo-$server:
 

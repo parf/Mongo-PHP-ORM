@@ -1,7 +1,7 @@
 <?
 /*
 
-ORM for Mongo
+ORM for Mongo - https://github.com/parf/Mongo-PHP-ORM/wiki/ORM
 
 NEVER CALL THIS DIRECTLY
 
@@ -17,8 +17,8 @@ M_Object provides:
   both on get and set
 * calculated fields (rvalue)
 * pseudo fields (lvalue)
-* has_one (one-to-one) relationship
-* has_many (one-to-many) relationship
+* has-one (one-to-one) relationship
+* has-many (one-to-many) relationship
 * handful of useful functions
   M::Alias(10)->inc(["counter" => -1])
   M::Alias($id)->inc("counter", -1)
@@ -30,22 +30,6 @@ Overload M_Object to get:
   * define: set_$key()
 * callbacks
   * after_load
-
-
-Config:
-
-
-TODO:
-
-  1.  type support
-  accessing non-existant array elements will return array()
-
-
-TODO
-*.  load configs for collection in ONE CALL:
-      STORE Data with M_Collection !!!  -- Even load in M_Collection
-      $this->C->config("KEY")
-
 
 */
 
