@@ -47,7 +47,13 @@ mongo-$server:
  *
  **/
 
+
 include __DIR__."/Collection.php"; // M_Collection
+include __DIR__."/TypeBase.php";    // M_TypeBase
+
+if (! class_exists("M_Type", false))
+    include __DIR__."/Type.php"; // M_Type
+
 include __DIR__."/TypedCollection.php"; // M_Collection
 include __DIR__."/Object.php"; // M_Object
 include __DIR__."/Sequence.php"; // M_Sequence
@@ -92,11 +98,11 @@ class M {
         if (! $connect)
             trigger_error("config 'mongo.connect' required");
 
-        // connect string config format:
+        // connect string format:
         //  http://www.mongodb.org/display/DOCS/Connections
         //  http://php.net/manual/en/mongo.construct.php
 
-        // add PHP support options via "?" (as in mongo), if ( can ) -> use, else -> emulate
+        // add PHP support options via "?" (as in mongo), if ( php_supports it ) use; else: emulate
 
         $params=[];
         //if (strpos($connect,","))
@@ -177,5 +183,3 @@ class M {
 class M2 extends M {
     static function load() {}
 }
-
-?>
