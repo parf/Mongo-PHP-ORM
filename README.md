@@ -6,8 +6,9 @@
     By Jun 7 2012 we'll provide standalone version
 
 # FEATURES (most important)
-* **ORM** with relations, calc fields, ...
-* **Type support** (complex/custom type support)
+* **ORM** with relations, calculated fields, field aliases
+* **Type support** (**custom** type support), alternative type-based field representation
+* Enum field type
 * Bells and whistles
 
 
@@ -17,14 +18,13 @@
   * maps mongo records to objects
   * you can extend this objects : add business logic, getters, setters, calculated fields
 * **relation** support (has_one, has_many)
-* field **aliases** ( long keys be unnessecary burden for bson based storage)
+* field **aliases** ( long field names is unnessecary burden for bson based storage)
 * **type support** 
-  * basic and complex types (name, ip, phone, email, url, ...)
-  * you can extend/change/add your types
-  * types are used for queries and updates / inserts
+  * basic and **complex types** (name, ip, phone, email, url, ...)
+  * you can change existing types and your types
   * types are supported on ORM and non ORM levels
 * lots of useful functions and shortcuts
-  * group by, mix/max/avg/sum/...
+  * group by: mix/max/sum
   * index enforcement, mysql migration
 * declarative and easy to support config
   * configure autoload fields, in-memory entity caching
