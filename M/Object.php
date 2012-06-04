@@ -45,12 +45,12 @@ class M_Object implements ArrayAccess {
     // instantiate object by id (primary key)
     // do not overload - overload _i() instead
     static function i($C, $id, $autoload=true) { # instance | NotFoundException
-        if ($o=$C->get_object($id))
+        if ($o=$C->_getObject($id))
             return $o;
         $o=new self($C, $id);
         if ($autoload)
             $o->autoload($autoload);
-        return $C->set_object($id, $o);
+        return $C->_setObject($id, $o);
     }
 
     // instantiate object from existing record data

@@ -80,7 +80,7 @@ class M_Sequence {
             trigger_error("SEQUENCE: no such sequence: $name");
 
         if ($val===false)
-            $val=self::last_db($name)+1;
+            $val=self::lastDb($name)+1;
 
         self::C($name)->update(
                                ["_id" => (string) $name],
@@ -98,14 +98,14 @@ class M_Sequence {
     static function create($name, $val=false) { # void
         self::enforce_namespace($name);
         if ($val === false)
-            $val=self::last_db($name)+1;
+            $val=self::lastDb($name)+1;
         self::C($name)->insert(["_id" => $name, "val" => (int)$val-1],
                                ["safe" => true, "fsync" => true]);
         #return M()->getLastError();
     }
 
     // last id from $name db.collection
-    static function last_db($name) {
+    static function lastDb($name) {
         $a=iterator_to_array( M($name)->find( [], ["_id"=>1] )->sort(["_id" => -1])->limit(1) );
         if (! $a)
             return 0;

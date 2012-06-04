@@ -153,8 +153,8 @@ final class M_TypedCollection extends M_Collection {
     }
 
     // insert that honors "node.field" notation
-    function dot_insert(array $data, array $options=[]) { # ID
-        parent::dot_insert( $this->applyTypes($data) );
+    function dotInsert(array $data, array $options=[]) { # ID
+        parent::dotInsert( $this->applyTypes($data) );
     }
 
     // smart addToSet

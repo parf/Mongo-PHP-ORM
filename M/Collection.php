@@ -118,12 +118,12 @@ class M_Collection implements ArrayAccess {
     }
 
     // alias of f
-    function find_a($query, $fields="") { # Array
+    function findA($query, $fields="") { # Array
         return iterator_to_array( $this->find($query, $fields) );
     }
 
     // find wrapper - return array of M_Object
-    function find_o($query) { # [M_Object, ...]
+    function findO($query) { # [M_Object, ...]
         $r = [];
         foreach($this->find($query) as $e)
             $r[$e["_id"]]=$this->go_d($e);
@@ -132,7 +132,7 @@ class M_Collection implements ArrayAccess {
 
     // find records with specified ids
     // _id: { $in:[$ids] }
-    function find_in(array $ids, $fields="") { # array
+    function findIn(array $ids, $fields="") { # array
         return $this->f(["_id" => ['$in' => $ids]], $fields);
     }
 
@@ -174,12 +174,12 @@ class M_Collection implements ArrayAccess {
         return $this->update($query, $newobj, $options);
     }
 
-    function update_multiple($q, $newobj, array $options = array() ) {
+    function updateMultiple($q, $newobj, array $options = array() ) {
         return $this->update($q, $newobj, array("multiple" => true) + $options);
     }
 
     // update + set/unset | insert
-    function upsert_set($id, array $set, $unset="") {
+    function upsertSet($id, array $set, $unset="") {
         $wh=array("_id" => (int)$id);
         $ts=($set ? array('$set' => $set) : array());
         if ($unset)
@@ -318,7 +318,7 @@ class M_Collection implements ArrayAccess {
         return M_Sequence::next($this->name, $inc, true); // autocreate
     }
 
-    function last_id() { # get last id from collection
+    function lastId() { # get last id from collection
         $r=$this->f([":sort" => "-_id", ":limit" => 1], "_id");
         if (! $r)
             return 0;
@@ -339,8 +339,8 @@ class M_Collection implements ArrayAccess {
     // Examples:
     //  M('merchant.sale')->group_by("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011) )
     //   ==  select merchant_id, sum(sale) from merchant.sale  where year=2011 group by merchant_id
-    function group_by($field_op, $group_by="", array $where=[]) { # { $group_fields, $sum_fields }
-        return M_Helper::group_by($this->MC, $field_op, $group_by, $where);
+    function groupBy($field_op, $group_by="", array $where=[]) { # { $group_fields, $sum_fields }
+        return M_Helper::groupBy($this->MC, $field_op, $group_by, $where);
     }
 
     function distinct($query=array(), $key, $raw=false) {
@@ -454,8 +454,8 @@ class M_Collection implements ArrayAccess {
     // dot notation for insert
     // we do not want to add checks to insert (slow it down)
     // example:
-    //   M("test.test")->dot_insert( ["a.b" => 1, "a.c.e" => 2] )
-    function dot_insert(array $data, array $options=[]) { # ID
+    //   M("test.test")->dotInsert( ["a.b" => 1, "a.c.e" => 2] )
+    function dotInsert(array $data, array $options=[]) { # ID
         $r=[];
         foreach($data as $k => $d) {
             if (!strpos($k, ".")) {
@@ -522,11 +522,13 @@ class M_Collection implements ArrayAccess {
         $this->O_CACHE=[];
         $this->configSet("no-cache", 1);
     }
-    function get_object($id) { # M_Object | null
+    // for use by M_Object ONLY
+    /*PRIVATE*/ function _getObject($id) { # M_Object | null
         if (isset($this->O_CACHE[$id]))
             return $this->O_CACHE[$id];
     }
-    function set_object($id, M_Object $o) { # M_Object
+    // for use by M_Object ONLY
+    /*PRIVATE*/ function _setObject($id, M_Object $o) { # M_Object
         if (! $this->config("no-cache"))
             $this->O_CACHE[$id]=$o;
         return $o;

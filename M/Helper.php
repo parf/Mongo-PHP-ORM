@@ -39,7 +39,7 @@ class M_Helper {
     }
 
     // apply fields() to all collections in db
-    static function db_collection_fields($db, $raw=false, /*string*/ $skip_collections="") {
+    static function dbCollectionFields($db, $raw=false, /*string*/ $skip_collections="") {
         $r=array();
         $skip=array_flip(explode(" ", $skip_collections));
         foreach( M()->$db->listCollections() as $c ) {
@@ -61,7 +61,7 @@ class M_Helper {
 
     // remove fields from collection
     // fields = space delimited field lists
-    static function unset_fields(/*string*/ $collection, /*string*/ $fields) {
+    static function unsetFields(/*string*/ $collection, /*string*/ $fields) {
         $F=array_flip(qw($fields)); // field => isset
         $C=M::dbc($collection);
         $ci=$C->find( array() ); // iterate over everthing
@@ -90,7 +90,7 @@ class M_Helper {
     // $mongo_collection - "db.collection"
     // $int_fields - space demilited int fields list
     // $pk = primary key
-    static function migrate_table($source, $mongo_collection,
+    static function migrateTable($source, $mongo_collection,
                                   $pk="id",
                                   $int_fields="", $float_fields="",
                                   /* callable */ $processor=null) { #
@@ -161,9 +161,9 @@ class M_Helper {
     //  sum,count,min,max
     //
     // Examples:
-    //  M("merchant.sale")->group_by("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011))
+    //  M("merchant.sale")->groupBy("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011))
     //   ==  select merchant_id, sum(sale) from merchant.sale  where year=2011 group by merchant_id
-    static function group_by($mc, $field_op, $group_by="", array $where=array(), $raw=false) { # { $group_fields, $sum_fields }
+    static function groupBy($mc, $field_op, $group_by="", array $where=array(), $raw=false) { # { $group_fields, $sum_fields }
         $initial=array();
 
         $r=""; // js part of reduce
