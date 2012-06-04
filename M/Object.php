@@ -1,7 +1,7 @@
 <?
 /*
 
-ORM for Mongo - https://github.com/parf/Mongo-PHP-ORM/wiki/ORM
+ORM for Mongo - 
 
 NEVER CALL THIS DIRECTLY
 
@@ -92,7 +92,7 @@ class M_Object implements ArrayAccess {
     }
 
     // load data - will load data only once
-    function load($fields="") { # data
+    function load($fields="") { #
         if ($this->loaded === true)
             return;
 
@@ -117,7 +117,7 @@ class M_Object implements ArrayAccess {
     // low level
     // forced load/reload
     protected function _load($fields="") {
-        Profiler::in("load", [$this->id, $fields]);
+        Profiler::in("M_Object:load", [$this->id, $fields]);
         if ($fields)
             $this->D = $this->C->findOne($this->id, $fields) + $this->D;
         else
@@ -128,9 +128,14 @@ class M_Object implements ArrayAccess {
     }
 
     // forced field get
-    function _get($fields="") {
-        Profiler::in("load", [$this->id, $fields]);
+    // works with actual fields ONLY !!
+    // avoid using use get instead
+    /* low-level */ function _get($fields="") {
+        Profiler::in("M_Object:_get", [$this->id, $fields]);
         $D = $this->C->findOne($this->id, $fields);
+        if (! $D["_id"])
+            throw new NotFoundException("".$this);
+        $this->D = $D + $this->D;
         Profiler::out();
         return $D;
     }
@@ -142,7 +147,7 @@ class M_Object implements ArrayAccess {
         $this->load($fields);
         $r = [];
         foreach($fields as $f)
-            $r[$f] = $this->__get($f);
+            $r[$f] = isset($this->D[$f]) ? $this->D[$f] : $this->__get($f);
         return $r;
     }
 
@@ -210,8 +215,8 @@ class M_Object implements ArrayAccess {
     //     M::Alias(2)->inc("counter");  << special case for inc, default is 1
 
     // SET is low level function
-    // if you need calc fields, field-aliaes - use save(array $kv)
-    function set()       {  # this
+    // if you need calc fields, field-aliases - use save(array $kv)
+    /* low-level */ function set() {  # this
         $a = func_get_args();
         if (count($a)==2)
             $a=[$a[0] => $a[1]];
