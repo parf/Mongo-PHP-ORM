@@ -6,8 +6,6 @@
 // HOMEBASE FRAMEWORK
 // Mongo ORM v2 test
 
-; M2::load();
-
 count(M::listDatabases())>0;
 #=true
 
@@ -37,54 +35,58 @@ M::Base(1);
 ; $a_sf->insert(["_id" => 1, "name" => "Ted", "age" => 6, "sex" => "male"]);  # some fields
 
 // no auto load
-; $a_no= $a_no->go(1);
-$a_no->v();
+$a_no->config("autoload");
+#=""
+; $c= $a_no->go(1);
+$c->v();
 #={"id":1,"D":[],"loaded":false}
-$a_no->get("age");
+$c->get("age");
 #={"age":38}
-$a_no->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"age":38},"loaded":false}
-$a_no->name;
+$c->name;
 #="Parf"
-$a_no->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Parf","age":38},"loaded":true}
 
 // _id load
-; $a_id= $a_id(1);
-$a_id->v();
+$a_id->config("autoload");
+#="_id"
+; $c= $a_id(1);
+$c->v();
 #={"id":1,"D":{"_id":1},"loaded":"a"}
-$a_id->id;  // object ID
+$c->id;  // object ID
 #=1
-$a_id->_id;  // mongo _id
+$c->_id;  // mongo _id
 #=1
-$a_id->v();
+$c->v();
 #={"id":1,"D":{"_id":1},"loaded":"a"}
-$a_id->name;
+$c->name;
 #="Vikki"
-$a_id->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Vikki","age":0.6},"loaded":true}
 
 // specific fields load
 $a_sf->config("autoload");
 #="name age mmm"
-; $a_sf= $a_sf(1);
-$a_sf->v();
+; $c= $a_sf(1);
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
-$a_sf->name;
+$c->name;
 #="Ted"
-$a_sf->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
-$a_sf->age;
+$c->age;
 #=6
-$a_sf->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
-$a_sf->mmm;  # autoloaded but non-exiting field
+$c->mmm;  # autoloaded but non-exiting field
 #=null
-$a_sf->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
-$a_sf->sex;  # non autloaded field
+$c->sex;  # non autloaded field
 #="male"
-$a_sf->v();
+$c->v();
 #={"id":1,"D":{"_id":1,"sex":"male","name":"Ted","age":6},"loaded":true}
 
 // untyped operation testing

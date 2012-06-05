@@ -31,6 +31,9 @@
 * almost no overhead, written with performance in mind
 * magic fields - alternative fields(type) representation, for read/write
 
+# REQUIREMENTS
+* php 5.4, APC, Mongo
+
 # [MORE DETAILS >>](https://github.com/parf/Mongo-PHP-ORM/wiki)
 
 AUTHOR

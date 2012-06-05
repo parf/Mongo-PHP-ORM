@@ -63,7 +63,7 @@ class M_Helper {
     // fields = space delimited field lists
     static function unsetFields(/*string*/ $collection, /*string*/ $fields) {
         $F=array_flip(qw($fields)); // field => isset
-        $C=M::dbc($collection);
+        $C=M($collection);
         $ci=$C->find( array() ); // iterate over everthing
         foreach($ci as $id => $v) {  // WTF - WHY ID is STRING?? when it is INT
             $id=$v["_id"]; // right type
@@ -164,7 +164,7 @@ class M_Helper {
     //  M("merchant.sale")->groupBy("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011))
     //   ==  select merchant_id, sum(sale) from merchant.sale  where year=2011 group by merchant_id
     static function groupBy($mc, $field_op, $group_by="", array $where=array(), $raw=false) { # { $group_fields, $sum_fields }
-        $initial=array();
+        $initial=[];
 
         $r=""; // js part of reduce
         foreach(explode(" ", $field_op) as $fo) {
@@ -204,7 +204,7 @@ class M_Helper {
                        "    reduce: $reduce"
                           );
         if (! isset($R["retval"]))
-            return array();
+            return [];
 
         if ($raw)
             return $R;

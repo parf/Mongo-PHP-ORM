@@ -1,6 +1,8 @@
 <?php
 /**
  *
+ #  HB FRAMEWORK: mongo-php-orm M2
+
  *      SYNOPSIS: MongoDB extensions
 
 Implements:
@@ -172,8 +174,4 @@ class M {
     }
 
 
-}
-
-class M2 extends M {
-    static function load() {}
 }
