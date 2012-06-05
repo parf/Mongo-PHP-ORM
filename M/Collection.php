@@ -501,7 +501,8 @@ class M_Collection implements ArrayAccess {
     // NEGATIVE ID - instantiate object with autoload=false
     function go(/*int*/ $id) { # M_Object
         $id = (int) $id;
-        $class = ($c = $this->config("class")) ? $c : "M_Object";
+        $c = $this->config("class");
+        $class = $c ? $c : "M_Object";
         if ($id < 0)
             return $class::i($this, - $id, false);
         $al = $this->config("autoload");

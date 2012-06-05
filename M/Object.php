@@ -47,7 +47,7 @@ class M_Object implements ArrayAccess {
     static function i($C, $id, $autoload=true) { # instance | NotFoundException
         if ($o=$C->_getObject($id))
             return $o;
-        $o=new self($C, $id);
+        $o=new static($C, $id);
         if ($autoload)
             $o->autoload($autoload);
         return $C->_setObject($id, $o);
@@ -299,8 +299,8 @@ class M_Object implements ArrayAccess {
         $ts = [];
         foreach($set as $k => $v) {
 
-            if ( method_exists($this, "set_$k") ) {
-                $v = $this->{"set_$k"}($v);
+            if ( method_exists($this, "set$k") ) {
+                $v = $this->{"set$k"}($v);
                 if ($v !== null)
                     $ts[$k] = $v;
                 continue;
@@ -312,7 +312,7 @@ class M_Object implements ArrayAccess {
             // MAGIC FIELDS
             if ( $k[0] == '_' ) {
                 if ($k == '_')
-                    continue; // treat as a field
+                    trigger_error("bad field name $k");
                 $k = substr($k, 1);
                 $ts[$k] = $this->C->setMagicField($k, $v);
                 continue;
@@ -376,8 +376,8 @@ class M_Object implements ArrayAccess {
         if ( isset($this->D[$key]) )
             return $this->D[$key];
 
-        if ( method_exists($this, "get_$key") )
-            return call_user_func( array($this, "get_$key") );
+        if ( method_exists($this, "get$key") )
+            return call_user_func( [$this, "get$key"] );
 
         // MAGIC FIELDS
         if ( $key[0] == '_' ) {

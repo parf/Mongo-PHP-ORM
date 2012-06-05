@@ -520,3 +520,40 @@ $t->_ip;
 ; $t->ip=3232235778;
 $t->_ip;
 #="192.168.1.2"
+
+
+// Extending M_Object 
+ $ct =M::CT();
+#={"class":"M_Collection","0":{"name":"test.class-test","sdc":"test.class-test","server":""}}
+$ct->config("class");
+#="M_CT"
+; $ct->remove(1);
+; $ct->insert(["_id" => 1, "kmh" => 100]);
+$c=$ct(1);
+#={"class":"M_CT","0":{"id":1}}
+get_class($c);
+#="M_CT"
+
+$c->kmh;
+#=100
+$c->mph;
+#=62.14
+
+// real field assignment
+; $c->kmh=200;
+$c->mph;
+#=124.27
+
+// calc field assignment
+; $c->mph=100;
+$c->kmh;
+#=160.93
+
+// custom function call
+$c->doit();
+#="Jawohl"
+
+// set processor
+; $c->abc="google";
+$c->abc;
+#="c822c1b63853ed273b89687ac505f9fa"

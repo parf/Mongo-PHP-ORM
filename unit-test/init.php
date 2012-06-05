@@ -37,4 +37,5 @@ function hash_unset(&$hash, $key) { # NULL | value
 }
 
 include __DIR__."/../M/M.php";
+include __DIR__."/M_CT.php"; // sample M_Object extension
 ?>
