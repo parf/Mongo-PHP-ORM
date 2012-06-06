@@ -117,6 +117,14 @@ class M_Object implements ArrayAccess {
             $fields = $this->__getAlMap();
             $this->loaded=true;
         }
+        // do not load already loaded fields
+        if (! $fields && $this->D) { // loaded = partial
+            $this->loaded=true;
+            $fields= [];
+            foreach($this->D as $k => $v)
+                $fields[$k] = false;
+            unset($fields["_id"]);
+        }
 
         $this->_load($fields);
         if (! $fields) {
@@ -184,14 +192,13 @@ class M_Object implements ArrayAccess {
             if (! is_array($fields))
                 $fields=explode(" ", $fields);
             foreach($fields as $f) {
-                if (strpos($f, ".")) {
-                    list($f, $x)=explode(".", $f, 2);
-                }
+                if (strpos($f, "."))
+                    list($f, $x) = explode(".", $f, 2);
                 unset($this->D[$f]);
             }
             return;
         }
-        $this->D=array();
+        $this->D = [];
     }
 
 
@@ -439,7 +446,6 @@ class M_Object implements ArrayAccess {
         $af = [];
         foreach(explode(" ", $this->C->config("autoload")) as $f)
             $af[$f]=false;
-        unset($af["no"]);
         unset($af["_id"]);
         $this->C->configSet("autoload-f", $af);
         return $af;

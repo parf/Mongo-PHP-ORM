@@ -4,7 +4,8 @@
 // https://github.com/parf/spartan-test
 //
 // HOMEBASE FRAMEWORK
-// Mongo ORM v2 test
+// Mongo ORM v2
+// https://github.com/parf/Mongo-PHP-ORM
 
 count(M::listDatabases())>0;
 #=true
@@ -39,55 +40,55 @@ $a_no->config("autoload");
 #=""
 ; $c= $a_no->go(1);
 $c->v();
-#={"id":1,"D":[],"loaded":false}
+#={"D":[],"id":1,"loaded":false}
 $c->get("age");
 #={"age":38}
 $c->v();
-#={"id":1,"D":{"_id":1,"age":38},"loaded":false}
+#={"D":{"_id":1,"age":38},"id":1,"loaded":false}
 $c->name;
 #="Parf"
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Parf","age":38},"loaded":true}
+#={"D":{"_id":1,"name":"Parf","age":38},"id":1,"loaded":true}
 
 // _id load
 $a_id->config("autoload");
 #="_id"
 ; $c= $a_id(1);
 $c->v();
-#={"id":1,"D":{"_id":1},"loaded":"a"}
+#={"D":{"_id":1},"id":1,"loaded":"a"}
 $c->id;  // object ID
 #=1
 $c->_id;  // mongo _id
 #=1
 $c->v();
-#={"id":1,"D":{"_id":1},"loaded":"a"}
+#={"D":{"_id":1},"id":1,"loaded":"a"}
 $c->name;
 #="Vikki"
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Vikki","age":0.6},"loaded":true}
+#={"D":{"_id":1,"name":"Vikki","age":0.6},"id":1,"loaded":true}
 
 // specific fields load
 $a_sf->config("autoload");
 #="name age mmm"
 ; $c= $a_sf(1);
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
 $c->name;
 #="Ted"
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
 $c->age;
 #=6
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
 $c->mmm;  # autoloaded but non-exiting field
 #=null
 $c->v();
-#={"id":1,"D":{"_id":1,"name":"Ted","age":6},"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
 $c->sex;  # non autloaded field
 #="male"
 $c->v();
-#={"id":1,"D":{"_id":1,"sex":"male","name":"Ted","age":6},"loaded":true}
+#={"D":{"_id":1,"sex":"male","name":"Ted","age":6},"id":1,"loaded":true}
 
 // untyped operation testing
 ; M::Base()->insert(["_id" => 1, "name" => "base"]);
@@ -142,7 +143,7 @@ isset($U[102]);
 $U[101]=["name" => "slash"];
 #={"name":"slash"}
 
-$U->findIn([100,101,102],"name");
+$U->findIn([100,101,102], "name");
 #={"100":{"_id":100,"name":"Parf"},"101":{"_id":101,"name":"slash"}}
 
 $U->lastId();
@@ -201,6 +202,7 @@ M::Base(-102); // Ok
 M::Base(-102)->name;
 #=["NotFoundException","test.base[102]",0]
 
+; $u101->reset(); // reset loaded fields cache
 $u101->xxx="check";
 #="check"
 
@@ -285,16 +287,16 @@ $u->z;
 
 ; $u->rename(["z" => "zz"]);
 $u->get("zz z");
-#={"zz":["y"],"z":null}
+#={"z":null,"zz":["y"]}
 #
 $u->v();
-#={"id":100,"D":{"_id":100,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1,"x":3,"y":[1,1,2,1,3],"zz":["y"]},"loaded":true}
+#={"D":{"_id":100,"zz":["y"],"y":[1,1,2,1,3],"x":3,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1},"id":100,"loaded":true}
 
 $u->C();
 #={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
 
 $u->json();
-#="{\"_id\":100,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1,\"x\":3,\"y\":[1,1,2,1,3],\"zz\":[\"y\"]}"
+#="{\"_id\":100,\"zz\":[\"y\"],\"y\":[1,1,2,1,3],\"x\":3,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1}"
 
 
 # FIELD ALIAS test
@@ -323,7 +325,7 @@ $u->_undefined_magic_field;
 
 ; $T=M::Typed();
 $T->type;
-#={"int":"int","arr":"array","t.s":"string","t.i":"int","t.a":"array","t.f":"float","t.b":"bool","t.d":"date","ai.*":"int","as.*":"string","en":["name","age","sex"],"map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"date":"date","datetime":"DateTime","ph":"phone","ip":"ip","usd":"price","dt":"datetime","_id":"int"}
+#={"_id":"int","ai.*":"int","arr":"array","as.*":"string","date":"date","datetime":"DateTime","dt":"datetime","en":["name","age","sex"],"int":"int","ip":"ip","map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"ph":"phone","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.s":"string","usd":"price"}
 
 ; $T->insert( ["_id" => 2, "int" => 1] );
 ; $T->insert( ["_id" => 3, "int" => "a"] );
@@ -428,7 +430,7 @@ $t->en=["a"];
 
 # ENUM AS MAP
 $T->type["map"];
-#={"y":"yksi","ka":"kaksi","ko":"kolme"}
+#={"ka":"kaksi","ko":"kolme","y":"yksi"}
 $t->map="kolme";
 #=["InvalidArgumentException","bad enum key: kolme type: [ENUM]",0]
 $t->map='ko';
