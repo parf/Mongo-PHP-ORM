@@ -8,20 +8,19 @@
 Implements:
 
 *
-* mongo severs switching (see M("server:"), M("server:db.collection")
+* mongo severs access (see M("server:"), M("server:db.collection")
 * wrapper for M_Collection, M_Object
-* Aliases support
-*
+* Aliases for collections
 
 M($x) is an alias to M::i(x)
 
 M()                  => Mongo (default server)
 M("server:")         => Mongo
 
-M("alias")           => M_Collection   // reccomended
+M("alias")           => M_Collection   // recommended
 M("db.name")         => M_Collection
 M("server:db.name")  => M_Collection
-M::$alias()          => M_Collection   // reccomended
+M::$alias()          => M_Collection   // recommended
 
 M("server:db.name", $id)    => M_Object
 M("db.name", $id)    => M_Object
@@ -57,6 +56,8 @@ include __DIR__."/Helper.php"; // M_Helper
 
 class M {
 
+
+    // collections and connections cache
     static $CACHE=[]; // (sdc|alias => M_Collection) or (server => Mongo)
 
     // NEVER CALL DIRECTLY: Use wrapper M()
