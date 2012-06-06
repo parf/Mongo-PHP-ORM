@@ -26,6 +26,10 @@ function M($sdc='', $id=false) { // Mongo | M_Collection | M_Object
     return M::i($sdc);
 }
 
+
+// You do not need this if you have autoload
+// Place classes in appropriate directories
+
 include __DIR__."/../M/M.php";
 # we are using stock types
 
