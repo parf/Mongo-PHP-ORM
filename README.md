@@ -1,12 +1,14 @@
 # Mongo-PHP-ORM (M2)
 
-    This is incarnation 2 of Homebase framework mongo ORM.
-    Product is in beta/stabilisation stage. Not used in production yet.
+    Mongo wrapper and ORM extension for PHP.
+    Part of Homebase framework
+
+    Product is in stabilisation stage. Not used in production yet.
 
 # FEATURES (most important)
 * **ORM** with relations, calculated fields, field aliases
 * **Type support** (**custom** type support), alternative type-based field representation
-* Enum field type
+* Enum(Hash) field type
 * Bells and whistles
 
 
