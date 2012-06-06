@@ -47,8 +47,8 @@ mongo-$server:
 include __DIR__."/Collection.php"; // M_Collection
 include __DIR__."/TypeBase.php";    // M_TypeBase
 
-if (! class_exists("M_Type", false))
-    include __DIR__."/Type.php"; // M_Type
+#if (! class_exists("M_Type", false))
+#    include __DIR__."/Type.php"; // M_Type
 
 include __DIR__."/TypedCollection.php"; // M_Collection
 include __DIR__."/Object.php"; // M_Object

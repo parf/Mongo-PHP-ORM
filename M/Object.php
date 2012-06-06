@@ -1,7 +1,7 @@
 <?
 /*
 
-ORM for Mongo - 
+ORM for Mongo -
 
 NEVER CALL THIS DIRECTLY
 
@@ -40,7 +40,7 @@ class M_Object implements ArrayAccess {
 
     private $C;  // M_Collection
     private $loaded=false;   // false - DATA NOT LOADED
-    private $D=array();      // read data cache
+    private $D=[];      // read data cache
 
     // instantiate object by id (primary key)
     // do not overload - overload _i() instead
@@ -53,15 +53,24 @@ class M_Object implements ArrayAccess {
         return $C->_setObject($id, $o);
     }
 
-    // instantiate object from existing record data
+    // instantiate object from already loaded data
+    // D - loaded data hash
     // no exists checks performed
-    static function i_d($C, $D) { # instance
+    static final function i_d($C, $D) { # instance
         $id=$D["_id"];
         if (! $id)
             trigger_error("_id field required");
         $o = static::i($C, $id, false);
-        $o->_set_D($D);
+        $o->_setD($D);
         return $o;
+    }
+
+    // instantiate object from existing M_Object
+    // no exists checks performed
+    static final function i_o(M_Object $O) { # static (current class)
+        $o  = new static($O->C(), $O->id);
+        $o->_setD($O->_getD());
+        return $O->C()->_setObject($O->id, $o);
     }
 
     // --------------------------------------------------------------------------------
@@ -343,14 +352,13 @@ class M_Object implements ArrayAccess {
         return json_encode($this->D);
     }
 
-    function C() { # MongoCollection
+    final function C() { # MongoCollection
         return $this->C;
     }
 
-    function v() { # Debug function
+    /* debug */ function v() { # Debug function
         return ["id" => $this->id, "D" => $this->D, "loaded" => $this->loaded];
     }
-
 
     // --------------------------------------------------------------------------------
     // INTERNAL
@@ -384,7 +392,7 @@ class M_Object implements ArrayAccess {
             if ($key == '_')
                 return $this->D;
             $key = substr($key, 1);
-            return $this->C->formatMagicField($key, $this->D[$key]);
+            return $this->C->formatMagicField($key, @$this->D[$key]);
         }
 
         // FIELD ALIAS
@@ -453,11 +461,15 @@ class M_Object implements ArrayAccess {
     }
 
 
-    // internal
-    // calling this will void your warranty
+    // internal: calling this will void your warranty
     // replace cached object data
-    function _set_D(array $D) {
+    /* internal */ final function _setD(array $D) {
         $this->D=$D;
+    }
+
+    // loaded data
+    final function _getD() {
+        return $this->D;
     }
 
     // --------------------------------------------------------------------------------

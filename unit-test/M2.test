@@ -315,6 +315,9 @@ $u->name_alias;
 $u["name-alias"];
 #="Parf"
 
+$u->_undefined_magic_field;
+#=["Exception","Typed collection required for magic fields",0]
+
 # ---------------------------------------------------------------------------------
 # Typed collections
 
@@ -521,18 +524,34 @@ $t->_ip;
 $t->_ip;
 #="192.168.1.2"
 
+$t->_non_defined_field;
+#=["Exception","Type required for magic field non_defined_field",0]
 
 // Extending M_Object 
- $ct =M::CT();
-#={"class":"M_Collection","0":{"name":"test.class-test","sdc":"test.class-test","server":""}}
-$ct->config("class");
-#="M_CT"
-; $ct->remove(1);
-; $ct->insert(["_id" => 1, "kmh" => 100]);
-$c=$ct(1);
-#={"class":"M_CT","0":{"id":1}}
-get_class($c);
-#="M_CT"
+ $C =M::Something();
+#={"class":"M_Collection","0":{"name":"test.something","sdc":"test.something","server":""}}
+$C->config("class");
+#="M_Something"
+; $C->remove(['_id' => ['$gt' => 0]]);
+; $C->insert(["_id" => 1, "field" => "v"]);
+; $C->insert(["_id" => 2, "class" => "Car", "kmh" => 100]);
+; $C->insert(["_id" => 3, "class" => "Person", "name" => "Jim"]);
+; $C->insert(["_id" => 4, "class" => "Manager", "name" => "Bob"]);
+
+$c=$C(1);
+#={"class":"M_Something","0":{"id":1}}
+$c->name();
+#="Something"
+$c->doit();
+#="some business function associated with collection"
+
+# custom class instantiation example
+$c=$C(2);
+#={"class":"M_Car","0":{"id":2}}
+$c->name();
+#="Car"
+$c->doit();
+#="some business function associated with collection"
 
 $c->kmh;
 #=100
@@ -549,11 +568,19 @@ $c->mph;
 $c->kmh;
 #=160.93
 
-// custom function call
+$c=$C(3);
+#={"class":"M_Person","0":{"id":3}}
+$c->name();
+#="Person Jim"
 $c->doit();
 #="Jawohl"
+; $c->password="google";
+$c->password;
+#="99429818bcabda5df392684be63fab78"
 
-// set processor
-; $c->abc="google";
-$c->abc;
-#="c822c1b63853ed273b89687ac505f9fa"
+$c=$C(4);
+#={"class":"M_Manager","0":{"id":4}}
+$c->name();
+#="Manager Bob"
+$c->doit();
+#="Do it yourself, i am the one who tells u what to do"
