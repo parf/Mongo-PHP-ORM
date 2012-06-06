@@ -85,6 +85,8 @@ class Config {
 
         // config data
         $cd = self::parse_config($path."/".$file.".config");
+	if (! $cd)
+	   trigger_error("can't read config $path/$file.config");
         $d = [];
         self::_flatten($cd, '', $d, $d);
         return $d;
@@ -184,6 +186,8 @@ class Config {
             }
             $r[] = "$c$k:\"$v\"";  // value is string - add ""
         }
+        
+        // echo join("\n", $r);        
         return json_decode("{".join("", $r)."}", true);
     }
 }

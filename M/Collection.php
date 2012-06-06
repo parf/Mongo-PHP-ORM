@@ -24,7 +24,8 @@ use M("db.col") or M("Alias") or M::Alias to instantiate
     M::Alias()->findOne($id) instead of M::Alias()->findOne( ["_id" => (int) $id] )
     note: scalar ids will be converted to int.
 
-  * Above example can be simplified even more as:
+  * Above example can be simplified even more as: 
+    (load autoloaded fields, load all if no autoload fields defined)
     M::Alias()[$id]
 
   * pass field lists as space delimited strings
@@ -358,7 +359,7 @@ class M_Collection implements ArrayAccess {
 
     // M::Alias()[$id]=$kv; == M::Alias()->set($id, $kv)
     function offsetSet($offset, $kv) {
-        $this->set($offset, $kv);
+        $this->update($offset, ['$set' => $kv]);
     }
 
     // unset( M::Alias()[$id] )
@@ -371,9 +372,9 @@ class M_Collection implements ArrayAccess {
         return $this->one($offset);
     }
 
-    // M::Alias()[$id]
+    // M::Alias()[$id] == M::Alias()->findOne($id, M::Alias()->config("autoload"))
     function offsetGet($offset) { # findOne
-        return $this->findOne($offset);
+        return $this->findOne($offset, (string) $this->config("autoload"));
     }
 
     // --------------------------------------------------------------------------------

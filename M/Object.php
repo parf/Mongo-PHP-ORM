@@ -24,10 +24,18 @@ M_Object provides:
   M::Alias($id)->inc("counter", -1)
   M::Alias($id)->inc("counter", -1)
 
+M_Router (M_Object) provides:
+* custom class instantiation based on 'class' field,
+  M_Object if no class field
+
+M_StrictRouter (M_Router) provides:
+* custom class instantiation based on 'class' field
+* 'class' fields required
+
 Overload M_Object to get:
 * calulated properties:
-  * define: get_$key()
-  * define: set_$key()
+  * get$key()
+  * set$key()
 * callbacks
   * after_load
 
@@ -38,9 +46,9 @@ class M_Object implements ArrayAccess {
     // Instance Variables
     public $id;  // current id == $D["_id"]
 
-    private $C;  // M_Collection
-    private $loaded=false;   // false - DATA NOT LOADED
-    private $D=[];      // read data cache
+    protected $C;  // M_Collection
+    protected $loaded=false;   // false - DATA NOT LOADED
+    protected $D=[];      // read data cache
 
     // instantiate object by id (primary key)
     // do not overload - overload _i() instead
@@ -414,7 +422,7 @@ class M_Object implements ArrayAccess {
             if (! $fk)
                 return null;
             list($db, $col, $key)=explode(".", $c[1], 3);
-            return M($db.".".$col)->find( [$key => $fk] );
+            return M($db.".".$col)->f( [$key => $fk] );
         }
 
         // return array() for non existant array-type fields
@@ -509,6 +517,54 @@ class M_Object implements ArrayAccess {
             $r= & $r[$k];
         }
         return $r;
+    }
+
+}
+
+
+/*
+  support for "class" field
+  instantiate "M_$class" class based on data field "class"
+  fallback to current class otherwise
+*/
+class M_Router extends M_Object {
+
+    protected static function _class($class) { # class to instantiate
+        if (! $class)
+            return null;
+        return "M_".$class;
+    }
+
+    // Router
+    // Instantiate class based on 'class' field
+    static function i($C, $id, $autoload=true) { # instance
+        if ($o=$C->_getObject($id))
+            return $o;
+        if ($autoload)
+            $D = $C[$id]; // load autoload fields
+        else
+            $D = $C->findOne($id, "class");  // _id & class
+        $class = static::_class(@$D["class"]);
+        $o = $class ? new $class($C, $id) : new static($C, $id);
+        $o->_setD($D);
+        if ($autoload)
+            $o->loaded = "a";
+        return $C->_setObject($id, $o);
+    }
+
+}
+
+/*
+  Strict  Router:
+  'class' field is required
+  DomainException if no field
+*/
+class M_StrictRouter extends M_Router {
+
+    protected static function _class($class) { # "class" | DomainException
+        if (! $class)
+            throw new DomainException("class field required");
+        return "M_".$class;
     }
 
 }

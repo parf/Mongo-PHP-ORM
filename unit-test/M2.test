@@ -535,8 +535,9 @@ $C->config("class");
 ; $C->remove(['_id' => ['$gt' => 0]]);
 ; $C->insert(["_id" => 1, "field" => "v"]);
 ; $C->insert(["_id" => 2, "class" => "Car", "kmh" => 100]);
-; $C->insert(["_id" => 3, "class" => "Person", "name" => "Jim"]);
-; $C->insert(["_id" => 4, "class" => "Manager", "name" => "Bob"]);
+; $C->insert(["_id" => 3, "class" => "Manager", "name" => "Bob"]);
+; $C->insert(["_id" => 4, "class" => "Person", "name" => "Jim", "m_id" => 3]);
+; $C->insert(["_id" => 5, "class" => "Person", "name" => "Tucker", "m_id" => 3]);
 
 $c=$C(1);
 #={"class":"M_Something","0":{"id":1}}
@@ -569,18 +570,28 @@ $c->kmh;
 #=160.93
 
 $c=$C(3);
-#={"class":"M_Person","0":{"id":3}}
-$c->name();
-#="Person Jim"
-$c->doit();
-#="Jawohl"
-; $c->password="google";
-$c->password;
-#="99429818bcabda5df392684be63fab78"
-
-$c=$C(4);
-#={"class":"M_Manager","0":{"id":4}}
+#={"class":"M_Manager","0":{"id":3}}
 $c->name();
 #="Manager Bob"
 $c->doit();
 #="Do it yourself, i am the one who tells u what to do"
+; $c->password="google";
+$c->password;
+#="99429818bcabda5df392684be63fab78"
+
+// Relation "has-many"
+$c->Subordinates;
+#={"4":{"_id":4,"class":"Person","name":"Jim","m_id":3},"5":{"_id":5,"class":"Person","name":"Tucker","m_id":3}}
+
+$c=$C(4);
+#={"class":"M_Person","0":{"id":4}}
+$c->name();
+#="Person Jim"
+$c->doit();
+#="Jawohl"
+
+// Relation "has-one"
+$c->Manager;
+#={"class":"M_Manager","0":{"id":3}}
+$c->Manager->name;
+#="Bob"
