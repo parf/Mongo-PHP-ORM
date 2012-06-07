@@ -127,12 +127,12 @@ class M_Collection implements ArrayAccess {
             if (is_scalar($query))
                 return $this->find($query, $fields);
             trigger_error("query must be scalar or array");
-            return;
+            die;
         }
         foreach($query as $k => $v) {
             if (is_array($v)) {
                 trigger_error(sprintf("M2::sf key: %s must be scalar", $k));
-                return;
+                die;
             }
         }
         return $this->find($query, $fields);
@@ -250,11 +250,15 @@ class M_Collection implements ArrayAccess {
     // supports op($op, [$q, [$key:$value, ...]]) and op($op, $q, $key, $value)
     function op($op, array $r) {
         // $r is [$q, array $kv] or [$q, scalar $key, $value]
-        if ( ! isset($r[1]))
+        if (! isset($r[1])) {
             trigger_error("not enough params");
-        if ( array_key_exists(2, $r) ) {
-            if ( is_array($r[2]) )
+            die;
+        }
+        if (array_key_exists(2, $r)) {
+            if (is_array($r[2])) {
                 trigger_error("can't mix KV-Array and 'key, value' syntax");
+                die;
+            }
             $r[1]=[$r[1] => $r[2]];
         }
         Profiler::in_off("Mongo::$op", $r[1]);

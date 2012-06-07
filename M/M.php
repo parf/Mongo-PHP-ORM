@@ -80,8 +80,10 @@ class M {
             // M("Alias")
             if (substr($sdc, -1)!=":") { 
                 $t = M::_config("", "alias.$sdc");
-                if (! $t)
+                if (! $t) {
                     trigger_error("alias $sdc not defined");
+                    die;
+                }
                 return M::$CACHE[$t]=self::i($t);
             }
 
@@ -92,8 +94,10 @@ class M {
         }
 
         $connect = M::_config($server, "connect");
-        if (! $connect)
+        if (! $connect) {
             trigger_error("config 'mongo.connect' required");
+            die;
+        }
 
         // connect string format:
         //  http://www.mongodb.org/display/DOCS/Connections
@@ -174,5 +178,19 @@ class M {
         return $a;
     }
 
+    // report fatal error - 
+    //    ex: missing required configuration item
+    //        incorrect parameters to the function (programmer fault)
+    // terminate application
+    private static function fatal($msg, $level=E_USER_ERROR) {
+        list($c, $b) = debug_backtrace(false); // $c - caller; $b - c-of-c
+        // $d = first_non_framework LoC
+        trigger_error("$msg\n".
+                      "    $b[class]$b[type]$b[function](".substr(substr(json_encode($b["args"]),1,-1),0, 240).")\n".
+                      "    $c[file]:$c[line]\n". 
+                      "    $b[file]:$b[line]\n", 
+                      $level); 
+        die;
+    }
 
 }

@@ -22,7 +22,7 @@ final class M_TypedCollection extends M_Collection {
     }
 
     // insert, $set
-    // arrays are enforced
+    // array type enforced
     function applyTypes(array $kv) {  # $kv
         $t = $this->type;
         foreach($kv as $k => &$v) {
@@ -30,8 +30,10 @@ final class M_TypedCollection extends M_Collection {
             if (! $T)
                 continue;
             $v=M_Type::apply($v, $T);
-            if ($T=='array' && ! is_array($v))
+            if ($T=='array' && ! is_array($v)) {
                 trigger_error("array expected. key: '$k'", E_USER_ERROR);
+                die;
+            }
         }
         return $kv;
     }

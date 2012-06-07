@@ -85,8 +85,10 @@ class Config {
 
         // config data
         $cd = self::parse_config($path."/".$file.".config");
-	if (! $cd)
+	if (! $cd) {
 	   trigger_error("can't read config $path/$file.config");
+           die;
+        }
         $d = [];
         self::_flatten($cd, '', $d, $d);
         return $d;
@@ -162,8 +164,10 @@ class Config {
             }
             list($k, $v) = explode(":", $l, 2);
             $v = trim($v);
-            if (! $v)
+            if (! $v) {
                 trigger_error("key:value expected line $line: $l");
+                die;
+            }
             if ($k[0]!=='"')
                 $k='"'.$k.'"';
 

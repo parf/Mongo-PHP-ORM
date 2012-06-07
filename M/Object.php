@@ -66,8 +66,10 @@ class M_Object implements ArrayAccess {
     // no exists checks performed
     static final function i_d($C, $D) { # instance
         $id=$D["_id"];
-        if (! $id)
+        if (! $id) {
             trigger_error("_id field required");
+            die;
+        }
         $o = static::i($C, $id, false);
         $o->_setD($D);
         return $o;
@@ -206,15 +208,19 @@ class M_Object implements ArrayAccess {
     // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
     protected function op($op, array $r) {
         // $r is [array $kv] or [$key, $value]
-        if ( ! isset($r[0]))
+        if (! isset($r[0])) {
             trigger_error("not enough params");
+            die;
+        }
         if (! array_key_exists(1, $r)) {
             foreach($r[0] as $k => $v)
                 $this->reset($k);
             return $this->C->update($this->id, [$op => $r[0]]);
         }
-        if ( is_array($r[0]) )
+        if (is_array($r[0])) {
             trigger_error("can't mix KV-Array and 'key, value' syntax");
+            die;
+        }
         $this->reset($r[0]);
         $this->C->update($this->id, [$op => [$r[0] => $r[1]]]);
         return $this;
@@ -335,8 +341,10 @@ class M_Object implements ArrayAccess {
 
             // MAGIC FIELDS
             if ( $k[0] == '_' ) {
-                if ($k == '_')
-                    trigger_error("bad field name $k");
+                if ($k == '_') {
+                    trigger_error("can't assign to $k field");
+                    die;
+                }
                 $k = substr($k, 1);
                 $ts[$k] = $this->C->setMagicField($k, $v);
                 continue;
@@ -353,8 +361,10 @@ class M_Object implements ArrayAccess {
 
             $ts[$k] = $v;
 
-            if ($this->C->config("field.$k") == 'array' && ! is_array($value))
+            if ($this->C->config("field.$k") == 'array' && ! is_array($value)) {
                 trigger_error("can't assign scalar to array");
+                die;
+            }
         }
 
         if ($ts)

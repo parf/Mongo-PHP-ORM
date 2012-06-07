@@ -169,8 +169,10 @@ class M_Helper {
         $r=""; // js part of reduce
         foreach(explode(" ", $field_op) as $fo) {
             list($f, $op)=explode(":", $fo);
-            if (! $op)
+            if (! $op) {
                 trigger_error("bad format: $fo. 'field:operation' expected");
+                die;
+            }
 
             $fn=$f."_".$op;
             $initial[$fn]=0;
@@ -184,6 +186,7 @@ class M_Helper {
             case "max":  $r.="if (isNaN(p.$fn)) { p.$fn=o.$f } else { p.$fn=Math.max(p.$fn,o.$f)};"; break;
             default:
                 trigger_error::alert("unknown operation: $op");
+                die;
             }
         }
 
@@ -198,11 +201,12 @@ class M_Helper {
                       array("condition" => $where)
                       );
 
-        if ($R["ok"]!=1)
-            trigger_error("Mongo groupby fail\n  ".x2s($R)."\n".
+        if ($R["ok"]!=1) {
+            throw new RuntimeException("Mongo groupby fail\n  ".x2s($R)."\n".
                        "    initial: ".x2s($initial)."\n".
                        "    reduce: $reduce"
                           );
+        }
         if (! isset($R["retval"]))
             return [];
 

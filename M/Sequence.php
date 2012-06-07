@@ -35,6 +35,7 @@ class M_Sequence {
             return self::next($name, $inc, false);
         }
         trigger_error("SEQUENCE: Unexpected result from sequence '$name': ".json_encode($r));
+        die;
     }
 
     // C() - sequence MongoCollection
@@ -54,8 +55,10 @@ class M_Sequence {
         if ($last === null)
             self::create($name, 0);
 
-        if ($last >= $val)
+        if ($last >= $val) {
             trigger_error("SEQUENCE: $name must be larger than $last");
+            die;
+        }
 
         self::reset($name, $val);
         return (int)$val;
@@ -75,9 +78,11 @@ class M_Sequence {
      * @param string $name
      * @param int $val
      */
-    static function reset($name, $val=false){ # void
-        if (!self::last($name))
+    static function reset($name, $val=false){ # null
+        if (!self::last($name)) {
             trigger_error("SEQUENCE: no such sequence: $name");
+            die;
+        }
 
         if ($val===false)
             $val=self::lastDb($name)+1;
@@ -105,7 +110,7 @@ class M_Sequence {
     }
 
     // last id from $name db.collection
-    static function lastDb($name) {
+    static function lastDb($name) { # last id
         $a=iterator_to_array( M($name)->find( [], ["_id"=>1] )->sort(["_id" => -1])->limit(1) );
         if (! $a)
             return 0;
@@ -118,8 +123,10 @@ class M_Sequence {
      */
     private static function enforce_namespace($name) { # bool
         list($db,$mycol) = explode('.', $name, 2);
-        if (!$mycol)
+        if (!$mycol) {
             trigger_error('SEQUENCE: sequence name must be in "db.col" format');
+            die;
+        }
     }
 
 }
