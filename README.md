@@ -1,7 +1,8 @@
 # Mongo-PHP-ORM (M2)
 
     Mongo wrapper and ORM extension for PHP.
-    Part of Homebase framework
+    M2 is a major rewrite of original orm.
+    Part of Homebase framework licensed under MIT license
 
     Product is in stabilisation stage. Not used in production yet.
 
@@ -30,6 +31,7 @@
   * configure autoload fields, in-memory entity caching
 * almost no overhead, written with performance in mind
 * magic fields - alternative fields(type) representation, for read/write
+* protection against mongo injections
 
 # REQUIREMENTS
 * php 5.4, APC, Mongo

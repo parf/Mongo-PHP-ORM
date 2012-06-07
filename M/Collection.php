@@ -118,8 +118,33 @@ class M_Collection implements ArrayAccess {
         return iterator_to_array( $this->find($query, $fields) );
     }
 
+    // Safe Find
+    // $query is name=>value only !!, no mongo operations allowed
+    // scalar test for value is enough ($and, $or requires arrays)
+    // NEVER trust users
+    function sf($query, $fields="") { # Array | error+null
+        if (! is_array($query)) {
+            if (is_scalar($query))
+                return $this->find($query, $fields);
+            trigger_error("query must be scalar or array");
+            return;
+        }
+        foreach($query as $k => $v) {
+            if (is_array($v)) {
+                trigger_error(sprintf("M2::sf key: %s must be scalar", $k));
+                return;
+            }
+        }
+        return $this->find($query, $fields);
+    }
+
     // alias of f
     function findA($query, $fields="") { # Array
+        return iterator_to_array( $this->find($query, $fields) );
+    }
+
+    // alias of f, legacy syntax support
+    function find_a($query, $fields="") { # 
         return iterator_to_array( $this->find($query, $fields) );
     }
 
@@ -134,6 +159,11 @@ class M_Collection implements ArrayAccess {
     // find records with specified ids
     // _id: { $in:[$ids] }
     function findIn(array $ids, $fields="") { # array
+        return $this->f(["_id" => ['$in' => $ids]], $fields);
+    }
+
+    // alias of findIn, legacy syntax support
+    function find_in(array $ids, $fields="") { # array
         return $this->f(["_id" => ['$in' => $ids]], $fields);
     }
 
@@ -372,9 +402,9 @@ class M_Collection implements ArrayAccess {
         return $this->one($offset);
     }
 
-    // M::Alias()[$id] == M::Alias()->findOne($id, M::Alias()->config("autoload"))
+    // M::Alias()[$id] == M::Alias()->findOne((int)$id, M::Alias()->config("autoload"))
     function offsetGet($offset) { # findOne
-        return $this->findOne($offset, (string) $this->config("autoload"));
+        return $this->findOne((int) $offset, (string) $this->config("autoload"));
     }
 
     // --------------------------------------------------------------------------------
