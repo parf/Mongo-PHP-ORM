@@ -6,13 +6,14 @@
  *      SYNOPSIS: MongoDB extensions
 
 Implements:
-
-*
-* mongo severs access (see M("server:"), M("server:db.collection")
-* wrapper for M_Collection, M_Object
+* core M2 classes load
+* classes Mongo, M_Collection instantiation and caching
+* M_Object instantiation
 * Aliases for collections
 
-M($x) is an alias to M::i(x)
+function M($sdc, $id) is an alias to M::i($sdc, $id)
+sdc stands for server-db-collection
+id is collection primary key (_id)
 
 M()                  => Mongo (default server)
 M("server:")         => Mongo
@@ -42,13 +43,8 @@ mongo-$server:
  *
  **/
 
-
 include __DIR__."/Collection.php"; // M_Collection
 include __DIR__."/TypeBase.php";    // M_TypeBase
-
-#if (! class_exists("M_Type", false))
-#    include __DIR__."/Type.php"; // M_Type
-
 include __DIR__."/TypedCollection.php"; // M_Collection
 include __DIR__."/Object.php"; // M_Object
 include __DIR__."/Sequence.php"; // M_Sequence
@@ -56,9 +52,8 @@ include __DIR__."/Helper.php"; // M_Helper
 
 class M {
 
-
     // collections and connections cache
-    static $CACHE=[]; // (sdc|alias => M_Collection) or (server => Mongo)
+    protected static $CACHE=[]; // (sdc|alias => M_Collection) or (server => Mongo)
 
     // NEVER CALL DIRECTLY: Use wrapper M()
     // mongo instantiator
@@ -66,7 +61,10 @@ class M {
     // sdc is Server:Db:Collection
     // sdc: "" | "server" | "server:db.collection" | "db.collection"
     // default server host is "localhost"
-    static function i($sdc='') { # Mongo | M_Collection
+    static function i($sdc='', $id=false) { # Mongo | M_Collection
+        if ($id!==false)
+            return self::i($sdc)->go($id);
+
         if (! $sdc)
             $sdc="";
         if (isset(M::$CACHE[$sdc]))
@@ -78,7 +76,7 @@ class M {
                 return M::$CACHE[$sdc]=M_Collection::i($sdc);
 
             // M("Alias")
-            if (substr($sdc, -1)!=":") { 
+            if (substr($sdc, -1)!=":") {
                 $t = M::_config("", "alias.$sdc");
                 if (! $t) {
                     trigger_error("alias $sdc not defined");
@@ -178,7 +176,7 @@ class M {
         return $a;
     }
 
-    // report fatal error - 
+    // report fatal error -
     //    ex: missing required configuration item
     //        incorrect parameters to the function (programmer fault)
     // terminate application
@@ -187,10 +185,65 @@ class M {
         // $d = first_non_framework LoC
         trigger_error("$msg\n".
                       "    $b[class]$b[type]$b[function](".substr(substr(json_encode($b["args"]),1,-1),0, 240).")\n".
-                      "    $c[file]:$c[line]\n". 
-                      "    $b[file]:$b[line]\n", 
-                      $level); 
+                      "    $c[file]:$c[line]\n".
+                      "    $b[file]:$b[line]\n",
+                      $level);
         die;
     }
 
-}
+    // Some functions
+
+    // unset key in hash, return unsetted key
+    static function hash_unset(&$hash, $key) { # NULL | value
+        if (! array_key_exists($key,$hash)) return;
+        $vl=$hash[$key];
+        unset($hash[$key]);
+        return $vl;
+    }
+
+    /*
+      Perls qw ( Quote Words ) with extended
+      Any/String to Array convertor ( non string returned back w/o processing )
+      d_e - entry delimiter
+      d_v - name/value delimiter
+
+      example: qw("a b c>Data") == array( "a", "b" , "c" => "Data")
+    */
+    function qw($data, $d_e=" ", $d_v=">") {
+        if (! is_string($data))
+            return $data;
+        if (! $data )
+            return array();
+        $res= $d_e == ' ' ? preg_split('/\s+/',trim($data)) : explode($d_e,$data);
+        if(! strpos($data,$d_v)) return $res;
+        $ret=array();
+        foreach($res as $r) {
+            if($p=strpos($r,$d_v))
+                $ret[substr($r,0,$p)]=substr($r,$p+1);
+            else
+                $ret[]=$r;
+        }
+        return $ret;
+    }
+
+    /*
+      qw like function, Quote Keys
+      example: qw("a b c>Data") == array( "a" =>true, "b"=>true , "c" => "Data")
+    */
+    function qk($data, $d_e=" ", $d_v=">") {
+        if (! is_string($data))
+            return $data;
+        if (! $data )
+            return array();
+        $res = $d_e == ' ' ? preg_split('/\s+/', trim($data)) : explode($d_e,$data);
+        $ret = array();
+        foreach($res as $r) {
+            if($p=strpos($r,$d_v))
+                $ret[substr($r,0,$p)]=substr($r,$p+1);
+            else
+                $ret[$r]=true;
+        }
+        return $ret;
+    }
+
+} // class M

@@ -1,8 +1,8 @@
 # Mongo-PHP-ORM (M2)
 
-    Mongo wrapper and ORM extension for PHP.
-    M2 is a major rewrite of original orm.
-    Part of Homebase framework licensed under MIT license
+    Mongo wrapper and ORM extension for PHP
+    M2 is a part of propitiatory Homebase framework
+    M2 is licensed under MIT license (permissive free software licence)
 
     Product is in stabilisation stage. Not used in production yet.
 

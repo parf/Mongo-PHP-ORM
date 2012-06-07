@@ -51,18 +51,19 @@ class M_Helper {
         if ( $raw)
             return $r;
         foreach($r as $c => $d) {
-            $cnt=hash_unset($d, "_id");
+            $cnt=$d["_id"]; 
+            unset($d["_id"]);
             echo "$c ($cnt)\n";
             if (! $d)
                 continue;
-            echo "    ".x2s($d, "\n    ")."\n\n";
+            echo "    ".json_encode($d, "\n    ")."\n\n";
         }
     }
 
     // remove fields from collection
     // fields = space delimited field lists
     static function unsetFields(/*string*/ $collection, /*string*/ $fields) {
-        $F=array_flip(qw($fields)); // field => isset
+        $F=array_flip(M::qw($fields)); // field => isset
         $C=M($collection);
         $ci=$C->find( array() ); // iterate over everthing
         foreach($ci as $id => $v) {  // WTF - WHY ID is STRING?? when it is INT
@@ -113,8 +114,8 @@ class M_Helper {
         }
 
         $i=0;
-        $int_fields   = qw($int_fields);
-        $float_fields = qw($float_fields);
+        $int_fields   = M::qw($int_fields);
+        $float_fields = M::qw($float_fields);
         $ids=array();
         while($row = $sth->fetch(PDO::FETCH_ASSOC)) {
             $i++;
@@ -195,15 +196,15 @@ class M_Helper {
         // can also use finalize option
         //  as in "finalize: function(out){ out.avg_time = out.total_time / out.count }"
 
-        $R=$mc->group(qk($group_by),
+        $R=$mc->group(M::qk($group_by),
                       $initial,
                       $reduce,
                       array("condition" => $where)
                       );
 
         if ($R["ok"]!=1) {
-            throw new RuntimeException("Mongo groupby fail\n  ".x2s($R)."\n".
-                       "    initial: ".x2s($initial)."\n".
+            throw new RuntimeException("Mongo groupby fail\n  ".json_encode($R)."\n".
+                       "    initial: ".json_encode($initial)."\n".
                        "    reduce: $reduce"
                           );
         }

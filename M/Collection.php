@@ -102,8 +102,8 @@ class M_Collection implements ArrayAccess {
             return null;
         if (strpos($field,".")) {
             $p=explode(".", $field);
-            foreach($p as $k) {
-                if(isset($r[$k]))
+            foreach ($p as $k) {
+                if (isset($r[$k]))
                     $r=$r[$k];
                 else
                     $r=null;
@@ -174,27 +174,27 @@ class M_Collection implements ArrayAccess {
     //     M("user.user")->hash(0, "email name") => hash {email => name}
     //     M("user.user")->hash(0, "email")      => hash {email => {....}}
     function hash($query, $fields) { # hash K=>V | K => [V,V,..]
-        if(! $query) $query=array();
+        if (! $query) $query=array();
         $query=$this->_query($query);
-        $f=explode(" ", $fields);
-        $c=count($f);
-        $r=array();
-        $k=$f[0];
-        if($c==1)
+        $f = explode(" ", $fields);
+        $c = count($f);
+        $r = [];
+        $k = $f[0];
+        if ($c==1)
            $f=array();
         if (! isset($query[$k]))
             $query[$k]=array('$exists' => true);
-        if($c==2) {
+        if ($c==2) {
             $vf=$f[1];
             if (! isset($query[$vf]))
-                $query[$vf]=array('$exists' => true);
-            foreach($this->MC->find($query, $f) as $e) {
-                $r[(int)$e[$k]]=$e[$vf];
+                $query[$vf] = ['$exists' => true];
+            foreach ($this->MC->find($query, $f) as $e) {
+                $r[(int)$e[$k]] = $e[$vf];
             }
             return $r;
         }
-        foreach($this->MC->find($query, $f) as $e)
-            $r[$e[$k]]=$e;
+        foreach ($this->MC->find($query, $f) as $e)
+            $r[$e[$k]] = $e;
         return $r;
     }
 
@@ -211,10 +211,10 @@ class M_Collection implements ArrayAccess {
 
     // update + set/unset | insert
     function upsertSet($id, array $set, $unset="") {
-        $wh=array("_id" => (int)$id);
-        $ts=($set ? array('$set' => $set) : array());
+        $wh = ["_id" => (int) $id];
+        $ts = $set ? ['$set' => $set] : [];
         if ($unset)
-            $ts['$unset']= is_array($unset) ? $unset : qk($unset);
+            $ts['$unset']= is_array($unset) ? $unset : M::qk($unset);
         if ($this->one($id))
             return $this->MC->update($wh, $ts);
         return $this->insert( $wh + $set );
@@ -259,7 +259,7 @@ class M_Collection implements ArrayAccess {
                 trigger_error("can't mix KV-Array and 'key, value' syntax");
                 die;
             }
-            $r[1]=[$r[1] => $r[2]];
+            $r[1] = [$r[1] => $r[2]];
         }
         Profiler::in_off("Mongo::$op", $r[1]);
         $this->update($r[0], [$op => $r[1]]);
@@ -426,20 +426,18 @@ class M_Collection implements ArrayAccess {
     // SPECIAL query fields: ":sort", ":skip", ":limit"
     //    :sort - hash or "space delimited field list" (if field starts with "-" - sort descending)
     // SPECIAL query field: ":pager" - pointer to Pager class instance.
-    // [-!!! IMPORTANT. $pager->page_size has priority over :limit as well as $pager->start has priority over :skip-
-    // returns array
-
+    // IMPORTANT. $pager->page_size has priority over :limit as well as $pager->start has priority over :skip-
     function find($query, $fields="") { # MongoCursor
-        $query=$this->_query($query);
-        $fields=$this->_fields($fields);
+        $query  = $this->_query($query);
+        $fields = $this->_fields($fields);
 
-        $sort=hash_unset($query, ":sort");
-        $skip=hash_unset($query, ":skip");
-        $limit=hash_unset($query, ":limit");
-        $pager=hash_unset($query, ":pager");
+        $sort  = M::hash_unset($query, ":sort");
+        $skip  = M::hash_unset($query, ":skip");
+        $limit = M::hash_unset($query, ":limit");
+        $pager = M::hash_unset($query, ":pager");
 
         if ($pager) {
-            $skip = $pager->start;
+            $skip  = $pager->start;
             $limit = $pager->page_size;
             Profiler::info("find/pager", array("c" => $this->sdc, "skip" => $skip, "limit" => $limit));
         }
@@ -449,7 +447,7 @@ class M_Collection implements ArrayAccess {
         if ($sort) {
             if (! is_array($sort)) { # space delimited fields. if field starts with "-" - sort desc
                 $_sort=array();
-                foreach(explode(' ', $sort) as $s) {
+                foreach (explode(' ', $sort) as $s) {
                     if ($s[0]=='-')
                         $_sort[substr($s,1)]=-1;
                     else
@@ -463,16 +461,16 @@ class M_Collection implements ArrayAccess {
         if ($pager)
             $pager->total($mc->count());
         if ($skip)
-            $mc=$mc->skip($skip);
+            $mc = $mc->skip($skip);
         if ($limit)
-            $mc=$mc->limit($limit);
+            $mc = $mc->limit($limit);
         return $mc;
     }
 
 
     // IF query  is NOT AN ARRAY - $query  - array("_id" => $query)
     function update($query, array $newobj, array $options = []) {
-        $query=$this->_query($query);
+        $query = $this->_query($query);
         return $this->MC->update($query, $newobj, $options);
     }
 

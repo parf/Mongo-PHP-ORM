@@ -225,12 +225,12 @@ class M_TypeBase {
         $pl=strlen($ph);
 
         $p3=substr($ph,0,3);
-        if( $p3=='011' || $p3=='001') $ph=substr($ph,3);
-        if( substr($ph,0,2)=='00') $ph=substr($ph,2);
+        if ( $p3=='011' || $p3=='001') $ph=substr($ph,3);
+        if ( substr($ph,0,2)=='00') $ph=substr($ph,2);
         $pl=strlen($ph);
 
-        if($pl<5) return $ph;
-        if($pl<7) return substr($ph,0,-4)."-".substr($ph,-4);
+        if ($pl<5) return $ph;
+        if ($pl<7) return substr($ph,0,-4)."-".substr($ph,-4);
         switch($pl) {
         case 7: return substr($ph,0,3)."-".substr($ph,3);
         case 8:
@@ -266,16 +266,16 @@ class M_TypeBase {
                            7840=>1,7940=>1,
                            8810=>1,8811=>1,8812=>1,8813=>1,8816=>1,8817=>1,8818=>1,8819=>1);
 
-        if( isset($short_prefix[$ph[0].$ph[1]]) )
+        if (isset($short_prefix[$ph[0].$ph[1]]))
             $p=2;
         else
             $p=3; // no 4d code support
-        if($p==3 && $ph[0]=='7')
+        if ($p==3 && $ph[0]=='7')
         $p=1;
-        if($p==3 && $ph[0]=='1')
+        if ($p==3 && $ph[0]=='1')
             $p=1;
 
-        if( isset($long_prefix[substr($ph,0,4)] ) )
+        if ( isset($long_prefix[substr($ph,0,4)] ) )
             $p=4;
 
         $pref=substr($ph,0,$p);

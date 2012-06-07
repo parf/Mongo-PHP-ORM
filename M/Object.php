@@ -427,7 +427,7 @@ class M_Object implements ArrayAccess {
 
         // HAS-ONE
         if ($c=$this->C->config("has-one.$key")) {  # [FK, db.collection]
-            if(! isset($this->D[$c[0]]))
+            if (! isset($this->D[$c[0]]))
                 return; // null
             $fk=$this->D[$c[0]];
             return M($c[1], $fk);
