@@ -115,6 +115,8 @@ namespace hb\config {
 
     /* internal */ class Config {
 
+        const EXT = ".yaml"; // config file extension
+
         static $data = [];
         const TIMEOUT=30;      // re-read config files timeout
         const STAT_TIMEOUT=3;  // check config files for time change
@@ -132,7 +134,7 @@ namespace hb\config {
         // update cached data if needed
         // included files are not cached, use "?UPDATE=1" to update
         // never call directly. use C("node", ["file"])
-        static function _load($site, $project=false, $file="main") {
+        static function _load($site, $project=false, $file="config") {
             $key="config:$site/$file"; // configs are cached per-site / per file
 
             if (isset($_GET["UPDATE"]))
@@ -146,11 +148,11 @@ namespace hb\config {
                     return;
             }
 
-            $fsc = "$site/$file.config";
-            $fpc = $project ? "$project/$file.config" : false;
-
-            $sc = filemtime($fsc);
-            $pc = $project ? filemtime($fpc) : 0;
+            $fsc = "$site/$file".self::EXT;
+            $fpc = $project ? "$project/$file".self::EXT : false;
+            
+            $sc = @filemtime($fsc);
+            $pc = $project ? @filemtime($fpc) : 0;
 
             // check for file modification time
             if ($d && $d[".filetime"]=="$sc:$pc")
@@ -184,12 +186,12 @@ namespace hb\config {
         static /* private */ function load($file) {
             if (isset(self::$data[$file]))
                 return;
-            self::_load(self::$data["main"][".site"], self::$data["main"][".project"], $file);
+            self::_load(self::$data["config"][".site"], self::$data["config"][".project"], $file);
         }
 
         // never call directly, use C($node, $file) || CC($node, $file)
         // fires an exception when accessing non-existent element
-        static /* private */ function get($node, $file="main", $alert=true) { # config node | Exception
+        static /* private */ function get($node, $file="config", $alert=true) { # config node | Exception
             if (! isset(self::$data[$file]))
                 self::load($file);
             if (! isset(self::$data[$file][$node])) {
@@ -201,7 +203,7 @@ namespace hb\config {
         }
 
         // never call directly, use C_set($node, $value, $file)
-        static /* private */ function set($node, $value, $file="main") { #
+        static /* private */ function set($node, $value, $file="config") { #
             if (! isset(self::$data[$file]))
                 self::load($file);
             self::$data[$file][$node]=$value;

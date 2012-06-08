@@ -1,0 +1,21 @@
+#!/bin/env php
+<?php
+
+include __DIR__."/Yaml.php";
+
+$vd = @$argv[2];
+
+if (! $argv[1]) {
+  echo "$argv[0] $filename.yaml - convert yaml to json";
+  echo "$argv[0] $filename.yaml 1 - convert yaml to php";
+  die;
+}
+
+if (! $vd) {
+    echo hb\yaml\Yaml::parse($argv[1], 1);
+    echo "\n";
+    die;
+}
+
+var_export(hb\yaml\Yaml::parse($argv[1]));
+echo "\n";

@@ -1,0 +1,15 @@
+    # Comment
+
+m2:
+   a: int/float
+   b: 1
+   c:
+       parf: 1
+       parf2: 2
+   d: test
+   xxx:
+    - parf
+    - test
+    - list item
+    - {"k":"v", "k2":1}
+

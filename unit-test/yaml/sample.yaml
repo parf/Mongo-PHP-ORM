@@ -1,0 +1,27 @@
+# YAML subset / YAML alike syntax for config files
+
+# Comment
+
+top-node:
+
+     int: 1        # int
+     float: 3.141    # float
+     non-quoted-text: text     # unquoted text
+     quoted-text: "text"   # quoted text
+
+     sub-node:
+           # can include any valid json constructs as value
+	   json: [1,2,3, true, null]
+           json: {"a":1,"b":"b","c":true}
+
+     list-of-items:    # list of items
+       - list item 1
+       - list item 2
+
+#     node:    # list of hashes
+#       - node:
+#         node:
+#         node:
+#       - node:
+#         node:
+#         node:
