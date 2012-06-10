@@ -26,4 +26,3 @@ include __DIR__."/../M/M.php";
 include __DIR__."/../M/Type.php";
 
 include __DIR__."/M_Something.php"; // sample M_Object extension
-?>

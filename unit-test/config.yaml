@@ -20,11 +20,12 @@ m2:
      
      collection:
          # collection config
- 
+         config: value 
 
   # Form 2: DB.Collection
   db.collection:
          # collection config
+         config: value
  
   # test database
   test:

@@ -13,3 +13,9 @@ m2:
     - list item
     - {"k":"v", "k2":1}
 
+bug_case:
+  node:
+   node:
+# there should be an error
+
+top-node: value

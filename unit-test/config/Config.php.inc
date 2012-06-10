@@ -90,18 +90,18 @@ namespace {
     use hb\Config\Config;
 
     // $node:  Dot-separated path.
-    function C($node, $file="main") { # config node | Exception
+    function C($node, $file="config") { # config node | Exception
         return Config::get($node, $file);
     }
 
     // safe get config value
-    function CC($node, $file="main") { # config node | false
+    function CC($node, $file="config") { # config node | false
         return Config::get($node, $file, false);
     }
 
     // Runtime-only config modification
     // $node - node
-    function C_set($node, $value, $file="main") { # $value
+    function C_set($node, $value, $file="config") { # $value
         return Config::set($node, $value, $file);
     }
 
