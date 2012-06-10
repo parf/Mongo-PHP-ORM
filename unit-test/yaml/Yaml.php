@@ -73,10 +73,15 @@ class Yaml {
                     die;
                 }
                 $next_id=$next[0]; // identation
-                if ($next[1]===null) // LIST
+                if ($next_id<$ident) {
+                    trigger_error("child node expected. Line $this->line '$k:$v'");
+                    die;
+                }
+                    
+                $this->redo = $next;
+                if ($next[1]===null) { // LIST
                     $v = $this->doList($next_id);
-                else {
-                    $this->redo = $next;
+                } else {
                     $v=$this->doit($next_id);
                 }
             }
@@ -95,6 +100,10 @@ class Yaml {
             // echo "doList($ident) ".json_encode($ikv)."\n";
             list($id, $k, $v)=$ikv; // ident, key, value
             if ($ident>$id) {
+                $this->redo=$ikv;
+                break;
+            }
+            if ($ident<$id) {
                 trigger_error("format error. only list of scalars are supported. Line $this->line '$k:$v'");
                 die;
             }
@@ -102,10 +111,7 @@ class Yaml {
                 trigger_error("format error. list item expected. Line $this->line '$k:$v'");
                 die;
             }
-            if ($ident<$id) {
-                $this->redo=$ikv;
-                break;
-            }
+
             $r[]=$this->v($v);
         }
         return "[".join(",", $r)."]";

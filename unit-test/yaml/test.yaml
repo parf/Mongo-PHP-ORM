@@ -12,10 +12,14 @@ m2:
     - test
     - list item
     - {"k":"v", "k2":1}
+   yyy:
+    - 1
+    - 2
+    - 3
 
 bug_case:
   node:
    node:
-# there should be an error
+    x: value
 
 top-node: value
