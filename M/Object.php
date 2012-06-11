@@ -46,31 +46,31 @@ class M_Object implements ArrayAccess {
     // Instance Variables
     public $id;  // current id == $D["_id"]
 
-    protected $C;  // M_Collection
+    protected $MC;  // M_Collection
     protected $loaded=false;   // false - DATA NOT LOADED
     protected $D=[];      // read data cache
 
     // instantiate object by id (primary key)
     // do not overload - overload _i() instead
-    static function i($C, $id, $autoload=true) { # instance | NotFoundException
-        if ($o=$C->_getObject($id))
+    static function i($MC, $id, $autoload=true) { # instance | NotFoundException
+        if ($o=$MC->_getObject($id))
             return $o;
-        $o=new static($C, $id);
+        $o=new static($MC, $id);
         if ($autoload)
             $o->autoload($autoload);
-        return $C->_setObject($id, $o);
+        return $MC->_setObject($id, $o);
     }
 
     // instantiate object from already loaded data
     // D - loaded data hash
     // no exists checks performed
-    static final function i_d($C, $D) { # instance
+    static final function i_d($MC, $D) { # instance
         $id=$D["_id"];
         if (! $id) {
             trigger_error("_id field required");
             die;
         }
-        $o = static::i($C, $id, false);
+        $o = static::i($MC, $id, false);
         $o->_setD($D);
         return $o;
     }
@@ -146,9 +146,9 @@ class M_Object implements ArrayAccess {
     protected function _load($fields="") {
         Profiler::in("M_Object:load", [$this->id, $fields]);
         if ($fields)
-            $this->D = $this->C->findOne($this->id, $fields) + $this->D;
+            $this->D = $this->MC->findOne($this->id, $fields) + $this->D;
         else
-            $this->D = $this->C->findOne($this->id);
+            $this->D = $this->MC->findOne($this->id);
         Profiler::out();
         if (! $this->D["_id"])
             throw new NotFoundException("".$this);
@@ -159,7 +159,7 @@ class M_Object implements ArrayAccess {
     // avoid using use get instead
     /* low-level */ function _get($fields="") {
         Profiler::in("M_Object:_get", [$this->id, $fields]);
-        $D = $this->C->findOne($this->id, $fields);
+        $D = $this->MC->findOne($this->id, $fields);
         if (! $D["_id"])
             throw new NotFoundException("".$this);
         $this->D = $D + $this->D;
@@ -170,7 +170,7 @@ class M_Object implements ArrayAccess {
     // Load with respect to caclulated fields and relationships
     // use: "$this->_" to get loaded field list
     function get($fields="") { # {field:value}
-        $fields = $this->C->_fields($fields);
+        $fields = $this->MC->_fields($fields);
         $this->load($fields);
         $r = [];
         foreach($fields as $f)
@@ -183,7 +183,7 @@ class M_Object implements ArrayAccess {
     // check that record with current id exists
     // you never need this (unless you did no-autoload && no-exist-check)
     function exists() { # bool
-        return $this->C->one($this->id);
+        return $this->MC->one($this->id);
     }
 
     // throw out loaded data, reset loaded flag
@@ -215,14 +215,14 @@ class M_Object implements ArrayAccess {
         if (! array_key_exists(1, $r)) {
             foreach($r[0] as $k => $v)
                 $this->reset($k);
-            return $this->C->update($this->id, [$op => $r[0]]);
+            return $this->MC->update($this->id, [$op => $r[0]]);
         }
         if (is_array($r[0])) {
             trigger_error("can't mix KV-Array and 'key, value' syntax");
             die;
         }
         $this->reset($r[0]);
-        $this->C->update($this->id, [$op => [$r[0] => $r[1]]]);
+        $this->MC->update($this->id, [$op => [$r[0] => $r[1]]]);
         return $this;
     }
 
@@ -232,7 +232,7 @@ class M_Object implements ArrayAccess {
             $this->reset( array_keys($unset) );
         else
             $this->reset($unset);
-        $this->C->_unset($this->id, $unset);
+        $this->MC->_unset($this->id, $unset);
         return $this;
     }
 
@@ -252,8 +252,8 @@ class M_Object implements ArrayAccess {
             $a=[$a[0] => $a[1]];
         else
             $a=$a[0];
-        $a = $this->C->applyTypes($a);
-        $this->C->MC()->update(["_id" => $this->id], ['$set' => $a]);
+        $a = $this->MC->applyTypes($a);
+        $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
         foreach($a as $k => $v)
             $this->D[$k] = $v;
         return $this;
@@ -265,7 +265,7 @@ class M_Object implements ArrayAccess {
     function add(/* field, value, value, value */) {
         $a=func_get_args();
         array_unshift($a, $this->id);
-        call_user_func_array([$this->C, "add"], $a);
+        call_user_func_array([$this->MC, "add"], $a);
         return $this;
     }
 
@@ -346,12 +346,12 @@ class M_Object implements ArrayAccess {
                     die;
                 }
                 $k = substr($k, 1);
-                $ts[$k] = $this->C->setMagicField($k, $v);
+                $ts[$k] = $this->MC->setMagicField($k, $v);
                 continue;
             }
 
             // Field Alias
-            if ( $fa = $this->C->config("field-alias.$k") ) {
+            if ( $fa = $this->MC->C("field-alias.$k") ) {
                 $key = $fa;
                 if (isset($this->D[$k]) && $this->D[$k]===$v) // skip useless writes
                     continue;
@@ -361,7 +361,7 @@ class M_Object implements ArrayAccess {
 
             $ts[$k] = $v;
 
-            if ($this->C->config("field.$k") == 'array' && ! is_array($value)) {
+            if ($this->MC->C("field.$k") == 'array' && ! is_array($value)) {
                 trigger_error("can't assign scalar to array");
                 die;
             }
@@ -377,8 +377,8 @@ class M_Object implements ArrayAccess {
         return json_encode($this->D);
     }
 
-    final function C() { # MongoCollection
-        return $this->C;
+    final function MC() { # MongoCollection
+        return $this->MC;
     }
 
     /* debug */ function v() { # Debug function
@@ -417,16 +417,16 @@ class M_Object implements ArrayAccess {
             if ($key == '_')
                 return $this->D;
             $key = substr($key, 1);
-            return $this->C->formatMagicField($key, @$this->D[$key]);
+            return $this->MC->formatMagicField($key, @$this->D[$key]);
         }
 
         // FIELD ALIAS
-        if ( $fa = $this->C->config("field-alias.$key") )
+        if ( $fa = $this->MC->C("field-alias.$key") )
             return $this->__get($fa);
 
 
         // HAS-ONE
-        if ($c=$this->C->config("has-one.$key")) {  # [FK, db.collection]
+        if ($c=$this->MC->C("has-one.$key")) {  # [FK, db.collection]
             if (! isset($this->D[$c[0]]))
                 return; // null
             $fk=$this->D[$c[0]];
@@ -434,7 +434,7 @@ class M_Object implements ArrayAccess {
         }
 
         // HAS-MANY
-        if ($c=$this->C->config("has-many.$key")) { # [FK, db.collection.KEY]
+        if ($c=$this->MC->C("has-many.$key")) { # [FK, db.collection.KEY]
             $fk=$this->D[$c[0]];
             if (! $fk)
                 return null;
@@ -443,21 +443,21 @@ class M_Object implements ArrayAccess {
         }
 
         // return array() for non existant array-type fields
-        if ($this->C->config("field.$key") == 'array')
+        if ($this->MC->C("field.$key") == 'array')
             return [];
 
         return null;
     }
 
     private function __getAlMap() { # al_field => -1
-        $af=$this->C->config("autoload-f");
+        $af=$this->MC->C("autoload-f");
         if (is_array($af))
             return $af;
         $af = [];
-        foreach(explode(" ", $this->C->config("autoload")) as $f)
+        foreach(explode(" ", $this->MC->C("autoload")) as $f)
             $af[$f]=false;
         unset($af["_id"]);
-        $this->C->configSet("autoload-f", $af);
+        $this->MC->C_set("autoload-f", $af);
         return $af;
     }
 
@@ -474,14 +474,14 @@ class M_Object implements ArrayAccess {
 
     // M_Collection
     // see ::i
-    /* protected */ function __construct($C, $id, array $D=[]) {
-        $this->C=$C;
+    /* protected */ function __construct($MC, $id, array $D=[]) {
+        $this->MC=$MC;
         $this->id=$id;
         $this->D=$D;
     }
 
     function __toString() {
-        return "".$this->C->sdc."[".$this->id."]";
+        return "".$this->MC->sdc."[".$this->id."]";
     }
 
 
@@ -517,7 +517,7 @@ class M_Object implements ArrayAccess {
     }
 
     function offsetExists($offset) { # id of found record
-        return $this->C->one($this->id, $offset);
+        return $this->MC->one($this->id, $offset);
     }
 
     // M::Alias($id)[$field]
@@ -553,19 +553,19 @@ class M_Router extends M_Object {
 
     // Router
     // Instantiate class based on 'class' field
-    static function i($C, $id, $autoload=true) { # instance
-        if ($o=$C->_getObject($id))
+    static function i($MC, $id, $autoload=true) { # instance
+        if ($o=$MC->_getObject($id))
             return $o;
         if ($autoload)
-            $D = $C[$id]; // load autoload fields
+            $D = $MC[$id]; // load autoload fields
         else
-            $D = $C->findOne($id, "class");  // _id & class
+            $D = $MC->findOne($id, "class");  // _id & class
         $class = static::_class(@$D["class"]);
-        $o = $class ? new $class($C, $id) : new static($C, $id);
+        $o = $class ? new $class($MC, $id) : new static($MC, $id);
         $o->_setD($D);
         if ($autoload)
             $o->loaded = "a";
-        return $C->_setObject($id, $o);
+        return $MC->_setObject($id, $o);
     }
 
 }

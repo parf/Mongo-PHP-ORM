@@ -83,7 +83,7 @@ class M_Collection implements ArrayAccess {
         else
             list($server, $name) = ["", $sdc];
         
-        if ($f = M::_config($server, $name.".field"))
+        if ($f = M::C($server, $name.".field"))
             return  new M_TypedCollection($server, $name, $f);
 
         return new M_Collection($server, $name);
@@ -406,9 +406,9 @@ class M_Collection implements ArrayAccess {
         return $this->one($offset);
     }
 
-    // M::Alias()[$id] == M::Alias()->findOne((int)$id, M::Alias()->config("autoload"))
+    // M::Alias()[$id] == M::Alias()->findOne((int)$id, M::Alias()->C("autoload"))
     function offsetGet($offset) { # findOne
-        return $this->findOne((int) $offset, (string) $this->config("autoload"));
+        return $this->findOne((int) $offset, (string) $this->C("autoload"));
     }
 
     // --------------------------------------------------------------------------------
@@ -534,17 +534,17 @@ class M_Collection implements ArrayAccess {
     // NEGATIVE ID - instantiate object with autoload=false
     function go(/*int*/ $id) { # M_Object
         $id = (int) $id;
-        $c = $this->config("class");
+        $c = $this->C("class");  // config
         $class = $c ? $c : "M_Object";
         if ($id < 0)
             return $class::i($this, - $id, false);
-        $al = $this->config("autoload");
+        $al = $this->C("autoload"); // config
         return $class::i($this, (int) $id, $al === null ? true : $al);
     }
 
     // instantiate M_Object from loaded data
     function go_d(array $data) { # M_Object
-        $class = ($c = $this->config("class")) ? $c : "M_Object";
+        $class = ($c = $this->C("class")) ? $c : "M_Object";
         return $class::i_d($this, $data);
     }
 
@@ -552,7 +552,7 @@ class M_Collection implements ArrayAccess {
     // runtime-only
     function disableObjectCache() {
         $this->O_CACHE=[];
-        $this->configSet("no-cache", 1);
+        $this->C_set("no-cache", 1);
     }
     // for use by M_Object ONLY
     /*PRIVATE*/ function _getObject($id) { # M_Object | null
@@ -561,7 +561,7 @@ class M_Collection implements ArrayAccess {
     }
     // for use by M_Object ONLY
     /*PRIVATE*/ function _setObject($id, M_Object $o) { # M_Object
-        if (! $this->config("no-cache"))
+        if (! $this->C("no-cache"))
             $this->O_CACHE[$id]=$o;
         return $o;
     }
@@ -580,13 +580,18 @@ class M_Collection implements ArrayAccess {
 
 
     // DB.COLLECTION Config from config.yaml
-    function config($node) {
-        return M::_config($this->server, $this->name.".".$node);
+    // Config - C("xxx") wrapper
+    function C($node) {
+        // return M::C($this->server, $this->name.".".$node);
+        $node = $this->name.".".$node;
+        if (! $this->server)
+            return CC("m2.".$node);
+        return CC("m2-".$this->server.".".$node);
     }
 
     // runtime modification of Collection config
-    function configSet($node, $value) {
-        M::_configSet($this->server, $this->name.".".$node, $value);
+    function C_set($node, $value) {
+        M::C_set($this->server, $this->name.".".$node, $value);
     }
 
     function __toString() { # current collection db.name

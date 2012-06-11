@@ -36,7 +36,7 @@ count(M::listDatabases())>0;
 ; $a_sf->insert(["_id" => 1, "name" => "Ted", "age" => 6, "sex" => "male"]);  # some fields
 
 // no auto load
-$a_no->config("autoload");
+$a_no->C("autoload");
 #=""
 ; $c= $a_no->go(1);
 $c->v();
@@ -51,7 +51,7 @@ $c->v();
 #={"D":{"_id":1,"name":"Parf","age":38},"id":1,"loaded":true}
 
 // _id load
-$a_id->config("autoload");
+$a_id->C("autoload");
 #="_id"
 ; $c= $a_id(1);
 $c->v();
@@ -68,7 +68,7 @@ $c->v();
 #={"D":{"_id":1,"name":"Vikki","age":0.6},"id":1,"loaded":true}
 
 // specific fields load
-$a_sf->config("autoload");
+$a_sf->C("autoload");
 #="name age mmm"
 ; $c= $a_sf(1);
 $c->v();
@@ -124,7 +124,7 @@ $U->f(100, "wol name");
 #={"100":{"_id":100,"name":"Parf","wol":0.1}}
 $U[100];
 #={"_id":100,"name":"Parf","test":"yes","wol":0.1,"x":{"y":"xy"}}
-$U->config("parf");
+$U->C("parf");
 #="custom-param"
 
 $U->f(100, "name");
@@ -292,7 +292,7 @@ $u->get("zz z");
 $u->v();
 #={"D":{"_id":100,"zz":["y"],"y":[1,1,2,1,3],"x":3,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1},"id":100,"loaded":true}
 
-$u->C();
+$u->MC();
 #={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
 
 $u->json();
@@ -532,7 +532,7 @@ $t->_non_defined_field;
 // Extending M_Object 
  $C =M::Something();
 #={"class":"M_Collection","0":{"name":"test.something","sdc":"test.something","server":""}}
-$C->config("class");
+$C->C("class");
 #="M_Something"
 ; $C->remove(['_id' => ['$gt' => 0]]);
 ; $C->insert(["_id" => 1, "field" => "v"]);

@@ -77,7 +77,7 @@ class M {
 
             // M("Alias")
             if (substr($sdc, -1)!=":") {
-                $t = M::_config("", "alias.$sdc");
+                $t = M::C("", "alias.$sdc");
                 if (! $t) {
                     trigger_error("alias $sdc not defined");
                     die;
@@ -91,7 +91,7 @@ class M {
             $server = "";
         }
 
-        $connect = M::_config($server, "connect");
+        $connect = M::C($server, "connect");
         if (! $connect) {
             trigger_error("config 'mongo.connect' required");
             die;
@@ -119,14 +119,15 @@ class M {
         return M::i($sdc);
     }
 
-    static function _config($server, $node) {
+    // Config - C("xxx") wrapper
+    static function C($server, $node) {
         if (! $server)
             return CC("m2.".$node);
         return CC("m2-$server.$node");
     }
 
     // runtime-only config change
-    static function _configSet($server, $node, $value) {
+    static function C_set($server, $node, $value) {
         if (! $server)
             return C_set("m2.".$node, $value);
         C_set("m2-$server.".$node, $value);
