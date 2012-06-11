@@ -9,14 +9,23 @@ top-node:
      non-quoted-text: text     # unquoted text
      quoted-text: "text"   # quoted text
 
-     sub-node:
            # can include any valid json constructs as value
-	   json: [1,2,3, true, null]
-           json: {"a":1,"b":"b","c":true}
+     sub-node:
+           json1: [1,2,3, true, null]
+           json2: {"a":1,"b":"b","c":true}
 
      list-of-items:    # list of items
        - list item 1
        - list item 2
+     node with spaces: value with spaces :)
+
+
+# Unsupported:
+
+#     multy-line:
+#           line1
+#           line2
+
 
 #     node:    # list of hashes
 #       - node:

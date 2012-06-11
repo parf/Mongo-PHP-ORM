@@ -1,25 +1,28 @@
     # Comment
 
 m2:
-   a: int/float
+   a: int/float  # same-line comments
    b: 1
    c:
        parf: 1
        parf2: 2
+       k: [1,2,3]
    d: test
    xxx:
     - parf
     - test
     - list item
-    - {"k":"v", "k2":1}
+    - [1, 2, 3, false, true, null, "abc", 3.14]
+    - {"k":"v", "k2":1, "k3": null}
    yyy:
     - 1
     - 2
     - 3
 
-bug_case:
+nesting:
   node:
    node:
     x: value
 
 top-node: value
+

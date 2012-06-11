@@ -537,6 +537,34 @@ class M_Object implements ArrayAccess {
 
 }
 
+// extend this class of you want to get errors when you access unknown fields
+//
+// controls ORM style access and saves
+// you can read any existing fields, field aliases, calc fields
+// you can write to field aliases, calc fields and only defined fields
+class M_StrictField extends M_Object {
+    
+    function __get($field) {
+        $v = parent::__get($field);
+        if ($v === null && $this->MC->C("field.$key"))
+            throw new DomainException("unknown field $field");
+        return $v;
+    }
+
+    /* low-level */ function set() {  // this
+        $a = func_get_args();
+        if (count($a)==2)
+            $a=[$a[0] => $a[1]];
+        else
+            $a=$a[0];
+        foreach($a as $field => $value) {
+            if ($this->MC->C("field.$key"))
+                throw new DomainException("unknown field $field");
+        }
+        return $this;
+    }
+    
+}
 
 /*
   support for "class" field

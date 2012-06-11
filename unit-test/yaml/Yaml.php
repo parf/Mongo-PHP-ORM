@@ -1,11 +1,24 @@
 <?php
 
 /*
-  YAML subset parser
+  YAML (subset of yaml) parser
 
   limitations:
-  value can be numbers and strings and json expressions ([...] and {...}) 
+     value can be numbers and strings and json expressions ([...] and {...}) 
 
+  does not support:
+     multyline nodes (too much ambigility)
+         node:
+             text text: text  << is this is a node or a text??
+
+     list of hashes:
+         node:
+         - node1: k
+           f: k2
+         - node1: k
+           f: k2
+
+     some other fancy yaml features
 
     */
 
@@ -72,6 +85,7 @@ class Yaml {
                     trigger_error("child node expected. Line $this->line '$k:$v'");
                     die;
                 }
+                // echo "next: ".json_encode($next)."\n";
                 $next_id=$next[0]; // identation
                 if ($next_id<$ident) {
                     trigger_error("child node expected. Line $this->line '$k:$v'");
@@ -148,7 +162,7 @@ class Yaml {
                     $o=0; // uneven number of quotes, this is not a comment
             }
             if ($o)
-                $l = rtrim(substr($l, $o-1));
+                $l = rtrim(substr($l, 0, $o-1));
         }
 
         // LISTS / ARRAYS - "- " prefix
@@ -160,7 +174,13 @@ class Yaml {
         // if (! preg_match('/^[\w ]+:/', $l))
         //    return [$ident, '', $l];  // no KEY
 
+        if (! strpos($l, ":")) {
+            trigger_error("node expected line: $this->line : $l");
+            die;
+        }
+
         list($k, $v) = explode(":", $l, 2);
+
         return [$ident, '"'.trim($k).'"', $this->v($v)];  // $k & $v - escaped
     }
 

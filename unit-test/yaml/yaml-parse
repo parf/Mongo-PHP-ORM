@@ -5,9 +5,9 @@ include __DIR__."/Yaml.php";
 
 $vd = @$argv[2];
 
-if (! $argv[1]) {
-  echo "$argv[0] $filename.yaml - convert yaml to json";
-  echo "$argv[0] $filename.yaml 1 - convert yaml to php";
+if (! @$argv[1]) {
+  echo "$argv[0] \$filename.yaml     - convert yaml to json"."\n";
+  echo "$argv[0] \$filename.yaml php - convert yaml to php"."\n";
   die;
 }
 
