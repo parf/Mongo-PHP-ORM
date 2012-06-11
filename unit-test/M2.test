@@ -7,9 +7,6 @@
 // Mongo ORM v2
 // https://github.com/parf/Mongo-PHP-ORM
 
-count(M::listDatabases())>0;
-#=true
-
 M();
 #={"class":"Mongo","0":{"connected":true,"status":null}}
 M("test.sequence");
@@ -19,7 +16,10 @@ M::Base();
 M::Base(1);
 #={"class":"M_Object","0":{"id":1}}
 
+count(M::listDatabases())>0;
+#=true
 
+// prepare clean playground for the test: drop old test databases (if there are any)
 ; M("test.sequence")->drop();
 ; $a_no=M("test.no_autoload");
 ; $a_no->drop();

@@ -4,7 +4,7 @@
     M2 is a part of propitiatory Homebase framework
     M2 is licensed under MIT license (permissive free software licence)
 
-    Product is in stabilisation stage. Not used in production yet.
+    Product is in "gamma" stabilisation stage. Scheduled for production deployment in June 2012.
 
 # FEATURES (most important)
 * **ORM** with relations, calculated fields, field aliases
