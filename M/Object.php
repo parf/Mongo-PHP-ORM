@@ -426,7 +426,6 @@ class M_Object implements ArrayAccess {
         if ( $fa = $this->MC->C("field-alias.$key") )
             return $this->__get($fa);
 
-
         // HAS-ONE
         if ($c=$this->MC->C("has-one.$key")) {  # [FK, db.collection]
             if (! isset($this->D[$c[0]]))
@@ -521,7 +520,7 @@ class M_Object implements ArrayAccess {
     function offsetGet($offset) { # value
         if (! strpos($offset, "."))
             return $this->__get($offset);
-        $this->_load();
+        $this->load();
         $r=$this->D;
         $p=explode(".", $offset);
         foreach($p as $k) {
