@@ -161,12 +161,15 @@ class M_Collection implements ArrayAccess {
     // find records with specified ids
     // _id: { $in:[$ids] }
     function findIn(array $ids, $fields="") { # array
-        return $this->f(["_id" => ['$in' => $ids]], $fields);
+        Profiler::in_off("M:find_in", [$this->sdc, $ids, $fields]);
+        $r = $this->f(["_id" => ['$in' => $ids]], $fields);
+        Profiler::out();
+        return $r;
     }
 
     // alias of findIn, legacy syntax support
     function find_in(array $ids, $fields="") { # array
-        return $this->f(["_id" => ['$in' => $ids]], $fields);
+        return $this->findIn($ids, $fields);
     }
 
     // 1  field  - field => {fields}

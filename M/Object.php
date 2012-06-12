@@ -128,10 +128,11 @@ class M_Object implements ArrayAccess {
     // low level
     // forced load/reload
     protected function _load($fields="") {
-        Profiler::in_off("M2O:load", [$this->MC->sdc, $this->id, $fields]);
         if ($fields) {
+            Profiler::in_off("M:load/partial", ["".$this, $fields]);
             $this->D = $this->MC->findOne($this->id, $fields) + $this->D;
         } else {
+            Profiler::in_off("M:load", "".$this);
             $this->D = $this->MC->findOne($this->id);
             $this->loaded = true;
         }
@@ -146,7 +147,7 @@ class M_Object implements ArrayAccess {
     // works with actual fields ONLY !!
     // avoid using use get instead
     /* low-level */ function _get($fields="") {
-        Profiler::in_off("M2O:_get", [$this->MC->sdc, $this->id, $fields]);
+        Profiler::in_off("M:_get", ["".$this, $fields]);
         $D = $this->MC->findOne($this->id, $fields);
         if (! $D["_id"])
             throw new NotFoundException("".$this);
@@ -211,7 +212,9 @@ class M_Object implements ArrayAccess {
             die;
         }
         $this->reset($r[0]);
+        Profiler::in_off("M:$op", ["".$this, $r]);
         $this->MC->update($this->id, [$op => [$r[0] => $r[1]]]);
+        Profiler::out();
         return $this;
     }
 
@@ -242,7 +245,7 @@ class M_Object implements ArrayAccess {
         else
             $a=$a[0];
         $a = $this->MC->applyTypes($a);
-        Profiler::in_off("M2O:set", [$this->MC->sdc, $this->id, $a]);
+        Profiler::in_off("M:set", ["".$this, $a]);
         $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
         Profiler::out();
         foreach($a as $k => $v)
@@ -480,7 +483,7 @@ class M_Object implements ArrayAccess {
     }
 
     function __toString() {
-        return "".$this->MC->sdc."[".$this->id."]";
+        return $this->MC->sdc."[".$this->id."]";
     }
 
 

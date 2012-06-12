@@ -107,7 +107,7 @@ class M {
         //if (strpos($connect,","))
         //        $params=["replicaSet" => $alias];
 
-        Profiler::in("mongo::connect", $connect);
+        Profiler::in("M::connect", $connect);
         $mongo=new Mongo("mongodb://$connect", $params);
         Profiler::out();
 
