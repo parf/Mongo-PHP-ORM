@@ -71,7 +71,7 @@ class M_Collection implements ArrayAccess {
     public $server;     // as-is
 
     protected $MC;         // MongoCollection
-    private $O_CACHE;    // ID => M_Object
+    private $O_CACHE=[];   // ID => M_Object
 
     // NEVER CALL DIRECTLY
     //  - use M("server:db.col") | M("db.col") | M("Alias") | M::Alias()
@@ -97,7 +97,9 @@ class M_Collection implements ArrayAccess {
     // ex: M::Account()->one(1006, "usd.balance")
     function one($id, $field='_id') { # null | value
         $q = $this->_query($id);
+        Profiler::in("M:one", [$this->sdc, $id, $field]);
         $r = $this->MC->findOne($q, [$field]);
+        Profiler::out();
         if (! $r)
             return null;
         if (strpos($field,".")) {
@@ -188,13 +190,17 @@ class M_Collection implements ArrayAccess {
             $vf=$f[1];
             if (! isset($query[$vf]))
                 $query[$vf] = ['$exists' => true];
+            Profiler::in("M:hash2", [$this->sdc, $query, $fields]);
             foreach ($this->MC->find($query, $f) as $e) {
                 $r[(int)$e[$k]] = $e[$vf];
             }
+            Profiler::out();
             return $r;
         }
+        Profiler::in("M:hash", [$this->sdc, $query, $fields]);
         foreach ($this->MC->find($query, $f) as $e)
             $r[$e[$k]] = $e;
+        Profiler::out();
         return $r;
     }
 
@@ -215,8 +221,12 @@ class M_Collection implements ArrayAccess {
         $ts = $set ? ['$set' => $set] : [];
         if ($unset)
             $ts['$unset']= is_array($unset) ? $unset : M::qk($unset);
-        if ($this->one($id))
-            return $this->MC->update($wh, $ts);
+        if ($this->one($id)) {
+            Profiler::in("M2:update", [$this->sdc, $wh, $ts]);
+            $this->MC->update($wh, $ts);
+            Profiler::out();
+            return;
+        }
         return $this->insert( $wh + $set );
     }
 
@@ -261,7 +271,7 @@ class M_Collection implements ArrayAccess {
             }
             $r[1] = [$r[1] => $r[2]];
         }
-        Profiler::in_off("Mongo::$op", $r[1]);
+        Profiler::in_off("M2:$op", [$this->sdc, $r[1]]);
         $this->update($r[0], [$op => $r[1]]);
         Profiler::out();
         return $this;
@@ -284,11 +294,14 @@ class M_Collection implements ArrayAccess {
         $a=func_get_args();
         array_shift($a);
         array_shift($a);
-        if ( count($a) == 1)
-            return $this->MC->update($q, ['$addToSet' => [$field => $a[0]]]);
-        $this->MC->update( $q,
-                           ['$addToSet' => [$field => ['$each' => $a]]]
-                           );
+        Profiler::in("M::add", [$this->sdc, $q, $field, $a]);
+        if (count($a) == 1)
+            $this->MC->update($q, ['$addToSet' => [$field => $a[0]]]);
+        else
+            $this->MC->update( $q,
+                               ['$addToSet' => [$field => ['$each' => $a]]]
+                               );
+        Profiler::out();
     }
 
     function addToSet() { return $this->op('$addToSet', func_get_args());   }
@@ -418,9 +431,12 @@ class M_Collection implements ArrayAccess {
     // Ex: M("account.account")->findOne(1006)
     // Ex: M("account.account")->findOne(1006, "balance date_created")
     function findOne($query, $fields="") { # data
+        Profiler::in("M:findOne", [$this->sdc, $query, $fields]);
         $query=$this->_query($query);
         $fields=$this->_fields($fields);
-        return $this->MC->findOne($query, $fields);
+        $r = $this->MC->findOne($query, $fields);
+        Profiler::out();
+        return $r;
     }
 
     // SPECIAL query fields: ":sort", ":skip", ":limit"
@@ -428,6 +444,7 @@ class M_Collection implements ArrayAccess {
     // SPECIAL query field: ":pager" - pointer to Pager class instance.
     // IMPORTANT. $pager->page_size has priority over :limit as well as $pager->start has priority over :skip-
     function find($query, $fields="") { # MongoCursor
+        Profiler::in("M2::find", [$this->sdc, $query, $fields]);
         $query  = $this->_query($query);
         $fields = $this->_fields($fields);
 
@@ -439,11 +456,12 @@ class M_Collection implements ArrayAccess {
         if ($pager) {
             $skip  = $pager->start;
             $limit = $pager->page_size;
-            Profiler::info("find/pager", array("c" => $this->sdc, "skip" => $skip, "limit" => $limit));
+            Profiler::info("find/pager", ["skip" => $skip, "limit" => $limit]);
         }
 
         $mc=$this->MC->find($query, $fields); // MongoCursor
-
+        Profiler::out();
+        
         if ($sort) {
             if (! is_array($sort)) { # space delimited fields. if field starts with "-" - sort desc
                 $_sort=array();
@@ -470,8 +488,11 @@ class M_Collection implements ArrayAccess {
 
     // IF query  is NOT AN ARRAY - $query  - array("_id" => $query)
     function update($query, array $newobj, array $options = []) {
+        Profiler::in("M2:update", [$this->sdc, $query, $newobj, $options]);
         $query = $this->_query($query);
-        return $this->MC->update($query, $newobj, $options);
+        $r = $this->MC->update($query, $newobj, $options);
+        Profiler::out();
+        return $r;
     }
 
 
@@ -508,8 +529,11 @@ class M_Collection implements ArrayAccess {
     // remove record(s) from collection
     // alternative: unset( M::Alias()[$id] )
     function remove($query, array $options=[]) {
+        Profiler::in("M:remove", [$this->sdc, $query]);
         $query=$this->_query($query);
-        return $this->MC->remove($query, $options);
+        $r = $this->MC->remove($query, $options);
+        Profiler::out();
+        return $r;
     }
 
     // --------------------------------------------------------------------------------
@@ -527,6 +551,11 @@ class M_Collection implements ArrayAccess {
     // --------------------------------------------------------------------------------
     // M_OBJECT
 
+    // base class for M_Object
+    function _class() { # M_Object or C("class")
+        return ($c = $this->C("class")) ? $c : "M_Object";
+    }
+
     // instantiate M_Object from ID
     // never call directly !! use:
     //   - M::Alias($id)
@@ -534,8 +563,7 @@ class M_Collection implements ArrayAccess {
     // NEGATIVE ID - instantiate object with autoload=false
     function go(/*int*/ $id) { # M_Object
         $id = (int) $id;
-        $c = $this->C("class");  // config
-        $class = $c ? $c : "M_Object";
+        $class = $this->_class();
         if ($id < 0)
             return $class::i($this, - $id, false);
         $al = $this->C("autoload"); // config
@@ -544,7 +572,7 @@ class M_Collection implements ArrayAccess {
 
     // instantiate M_Object from loaded data
     function go_d(array $data) { # M_Object
-        $class = ($c = $this->C("class")) ? $c : "M_Object";
+        $class = $this->_class();
         return $class::i_d($this, $data);
     }
 
@@ -619,9 +647,15 @@ class M_Collection implements ArrayAccess {
         return $kv;
     }
 
-    // proxy calls to MongoCollection
+    // proxy calls to MongoCollection or to static methods in M_Object(or class that extends it)
     public function __call($meth, $args) {
-        return call_user_func_array( array($this->MC, $meth), $args);
+        if ( method_exists($this->MC, $meth) ) {
+            Profiler::in("M2:MC:$meth", [$this->sdc, $args]);
+            $r = call_user_func_array([$this->MC, $meth], $args);
+            Profiler::out();
+            return $r;
+        }
+        return call_user_func_array([$this->_class(), $meth], $args);
     }
 
     public function __invoke($x) {

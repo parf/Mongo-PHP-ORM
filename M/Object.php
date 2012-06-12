@@ -36,8 +36,6 @@ Overload M_Object to get:
 * calulated properties:
   * get$key()
   * set$key()
-* callbacks
-  * after_load
 
 */
 
@@ -63,7 +61,7 @@ class M_Object implements ArrayAccess {
 
     // instantiate object from already loaded data
     // D - loaded data hash
-    // no exists checks performed
+   // no exists checks performed
     static final function i_d($MC, $D) { # instance
         $id=$D["_id"];
         if (! $id) {
@@ -78,17 +76,9 @@ class M_Object implements ArrayAccess {
     // instantiate object from existing M_Object
     // no exists checks performed
     static final function i_o(M_Object $O) { # static (current class)
-        $o  = new static($O->C(), $O->id);
-        $o->_setD($O->_getD());
-        return $O->C()->_setObject($O->id, $o);
-    }
-
-    // --------------------------------------------------------------------------------
-
-    // for overload
-    // called after data load
-    function afterLoad() {
-        // overload me
+        $o  = new static($O->MC(), $O->id);
+        $o->_setD($O->D());
+        return $O->MC()->_setObject($O->id, $o);
     }
 
     // --------------------------------------------------------------------------------
@@ -101,13 +91,11 @@ class M_Object implements ArrayAccess {
     // autoload = "field list" - load specific fields
     function autoload($autoload) {
         if ($autoload === true) { // all
-            $this->_load();
-            $this->loaded=true;
-        } else { // load specific fields
-            $this->_load($autoload);
-            $this->loaded = "a"; // autoload fields only (partial)
+            $this->_load(); // loaded = true
+            return;
         }
-        $this->afterLoad();
+        $this->_load($autoload);
+        $this->loaded = "a"; // autoload fields only (partial)
     }
 
     // load data - will load data only once
@@ -129,10 +117,6 @@ class M_Object implements ArrayAccess {
         }
 
         $this->_load($fields);
-        if (! $fields) {
-            $this->loaded=true;
-            $this->afterLoad();
-        }
     }
 
     // reload fields
@@ -144,21 +128,25 @@ class M_Object implements ArrayAccess {
     // low level
     // forced load/reload
     protected function _load($fields="") {
-        Profiler::in("M_Object:load", [$this->id, $fields]);
-        if ($fields)
+        Profiler::in_off("M2O:load", [$this->MC->sdc, $this->id, $fields]);
+        if ($fields) {
             $this->D = $this->MC->findOne($this->id, $fields) + $this->D;
-        else
+        } else {
             $this->D = $this->MC->findOne($this->id);
+            $this->loaded = true;
+        }
         Profiler::out();
-        if (! $this->D["_id"])
+        if (! $this->D["_id"]) {
+            $this->loaded = false;
             throw new NotFoundException("".$this);
+        }
     }
 
     // forced field get
     // works with actual fields ONLY !!
     // avoid using use get instead
     /* low-level */ function _get($fields="") {
-        Profiler::in("M_Object:_get", [$this->id, $fields]);
+        Profiler::in_off("M2O:_get", [$this->MC->sdc, $this->id, $fields]);
         $D = $this->MC->findOne($this->id, $fields);
         if (! $D["_id"])
             throw new NotFoundException("".$this);
@@ -182,9 +170,10 @@ class M_Object implements ArrayAccess {
 
     // check that record with current id exists
     // you never need this (unless you did no-autoload && no-exist-check)
-    function exists() { # bool
-        return $this->MC->one($this->id);
-    }
+    // use: $this->_id instead
+    // function exists() { # bool
+    //     return $this->MC->one($this->id);
+    // }
 
     // throw out loaded data, reset loaded flag
     // fields = space delimited field list
@@ -253,7 +242,9 @@ class M_Object implements ArrayAccess {
         else
             $a=$a[0];
         $a = $this->MC->applyTypes($a);
+        Profiler::in_off("M2O:set", [$this->MC->sdc, $this->id, $a]);
         $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
+        Profiler::out();
         foreach($a as $k => $v)
             $this->D[$k] = $v;
         return $this;
@@ -381,6 +372,14 @@ class M_Object implements ArrayAccess {
         return $this->MC;
     }
 
+    // access to loaded data
+    // use in getters to avoid recursion
+    final function D($field=false) { // loaded field value
+        if ($field === false)
+            return $this->D;
+        return @$this->D[$field];
+    }
+
     /* debug */ function v() { # Debug function
         return ["id" => $this->id, "D" => $this->D, "loaded" => $this->loaded];
     }
@@ -485,15 +484,10 @@ class M_Object implements ArrayAccess {
     }
 
 
-    // internal: calling this will void your warranty
+    // INTERNAL: calling this will void your warranty!!
     // replace cached object data
     /* internal */ final function _setD(array $D) {
         $this->D=$D;
-    }
-
-    // loaded data
-    final function _getD() {
-        return $this->D;
     }
 
     // --------------------------------------------------------------------------------
@@ -537,13 +531,19 @@ class M_Object implements ArrayAccess {
 
 }
 
-// extend this class of you want to get errors when you access unknown fields
-//
-// controls ORM style access and saves
-// you can read any existing fields, field aliases, calc fields
-// you can write to field aliases, calc fields and only defined fields
+/*
+
+  extend this class of you want to get errors when you access unknown fields
+
+  controls ORM style access and saves:
+  * read any existing fields, field aliases, calc fields
+  * write to field aliases, calc fields and only defined fields
+
+  throws DomainException when trying to read/write undefined fields
+
+*/
 class M_StrictField extends M_Object {
-    
+
     function __get($field) {
         $v = parent::__get($field);
         if ($v === null && $this->MC->C("field.$key"))
@@ -563,7 +563,7 @@ class M_StrictField extends M_Object {
         }
         return $this;
     }
-    
+
 }
 
 /*
@@ -579,7 +579,7 @@ class M_Router extends M_Object {
         return "M_".$class;
     }
 
-// Router
+    // Router
     // Instantiate class based on 'class' field
     static function i($MC, $id, $autoload=true) { # instance
         if ($o=$MC->_getObject($id))
@@ -600,8 +600,7 @@ class M_Router extends M_Object {
 
 /*
   Strict  Router:
-  'class' field is required
-  DomainException if no field
+      'class' field is required - DomainException if no field
 */
 class M_StrictRouter extends M_Router {
 

@@ -381,17 +381,17 @@ $T(1)->aaa;
 #={"b":{"c":[1,2,3]}}
 
 # SEQUENCE
-; $b = M::Base();
-$b1=$b->insert(["a" => 1]);
+; $B = M::Base();
+$b1=$B->insert(["a" => 1]);
 #=102
 
-$b2=$b->insert(["c" => 2]);
+$b2=$B->insert(["c" => 2]);
 #=103
 
-$b($b1)->_;
+$B($b1)->_;
 #={"_id":102,"a":1}
 
-$b[$b2];
+$B[$b2];
 #={"_id":103,"c":2}
 
 // ENUMS - prederined hashes

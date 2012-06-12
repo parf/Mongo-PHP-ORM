@@ -72,7 +72,7 @@ final class M_TypedCollection extends M_Collection {
                 continue;
             }
 
-            $v=$this->applyType($v, $T);
+            $v=M_Type::apply($v, $T);
         }
 
         return $kv;
