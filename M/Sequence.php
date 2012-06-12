@@ -18,7 +18,7 @@ class M_Sequence {
      * @param bool $autocreate
      */
     static function next($name, $inc=1, $autocreate=false) { # id || ids
-        $db = self::C($name)->db; // just get db
+        $db = self::MC($name)->db; // just get db
         $r  = $db->command(['findAndModify' => 'sequence',
                             'query'  => ['_id' => (string) $name],
                             'update' => ['$inc' => ['val' => $inc]],
@@ -38,10 +38,10 @@ class M_Sequence {
         die;
     }
 
-    // C() - sequence MongoCollection
-    // C(false) - sequence MongoDB
-    static function C($name) { # MongoCollection
-        list($db, $col)=explode(".", $name, 2); // sequence is always located in the same db
+    // MC(name) - sequence MongoCollection
+    // sequence is always located in the same db
+    static function MC($name) { # MongoCollection
+        list($db, $col)=explode(".", $name, 2);
         return M()->$db->sequence;
     }
 
@@ -69,7 +69,7 @@ class M_Sequence {
      * @param string $name        db.mycol
      */
     static function last($name) { # value
-        $r = self::C($name)->findOne(["_id" => (string)$name]);
+        $r = self::MC($name)->findOne(["_id" => (string)$name]);
         return $r["val"];
     }
 
@@ -78,7 +78,7 @@ class M_Sequence {
      * @param string $name
      * @param int $val
      */
-    static function reset($name, $val=false){ # null
+    static function reset($name, $val=false) { # null
         if (!self::last($name)) {
             trigger_error("SEQUENCE: no such sequence: $name");
             die;
@@ -87,7 +87,7 @@ class M_Sequence {
         if ($val===false)
             $val=self::lastDb($name)+1;
 
-        self::C($name)->update(
+        self::MC($name)->update(
                                ["_id" => (string) $name],
                                ['$set' => ["val" => (int)$val]],
                                ["safe" => true, "fsync" => true]
@@ -104,7 +104,7 @@ class M_Sequence {
         self::enforce_namespace($name);
         if ($val === false)
             $val=self::lastDb($name)+1;
-        self::C($name)->insert(["_id" => $name, "val" => (int)$val-1],
+        self::MC($name)->insert(["_id" => $name, "val" => (int)$val-1],
                                ["safe" => true, "fsync" => true]);
         #return M()->getLastError();
     }

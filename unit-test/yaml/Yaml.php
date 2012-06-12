@@ -26,7 +26,7 @@ namespace hb\yaml;
 
 class Yaml {
 
-    public static function parse($file, $want_json = false) {
+    public static function parse($file, $want_json = false) { # array | json
         $p = new static($file);
         $json = $p->doit();
         if (! $json)

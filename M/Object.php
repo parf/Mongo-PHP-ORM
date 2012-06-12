@@ -579,7 +579,7 @@ class M_Router extends M_Object {
         return "M_".$class;
     }
 
-    // Router
+// Router
     // Instantiate class based on 'class' field
     static function i($MC, $id, $autoload=true) { # instance
         if ($o=$MC->_getObject($id))
