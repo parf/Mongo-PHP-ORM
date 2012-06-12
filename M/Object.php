@@ -319,7 +319,9 @@ class M_Object implements ArrayAccess {
     // set with respect to setters and field aliases
     // PRECEDENCE:
     //   METHOD > FIELD > MAGIC > ALIAS
-    function save(array $set) {
+    function save(array $set=[]) {
+        if (! $set)
+            return;
         $ts = [];
         foreach($set as $k => $v) {
 
