@@ -137,7 +137,7 @@ class M_Collection implements ArrayAccess {
                 die;
             }
         }
-        return $this->find($query, $fields);
+        return $this->f($query, $fields);
     }
 
     // alias of f
@@ -153,7 +153,7 @@ class M_Collection implements ArrayAccess {
     // find wrapper - return array of M_Object
     function findO($query) { # [M_Object, ...]
         $r = [];
-        foreach($this->find($query) as $e)
+        foreach ($this->find($query) as $e)
             $r[$e["_id"]]=$this->go_d($e);
         return $r;
     }

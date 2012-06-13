@@ -177,6 +177,11 @@ class M {
         return $a;
     }
 
+    // legacy
+    static function index($dbc, $fields, $echo=1) {
+        return M_Helper::index($dbc, $fields, $echo);
+    }
+
     // report fatal error -
     //    ex: missing required configuration item
     //        incorrect parameters to the function (programmer fault)
@@ -210,7 +215,7 @@ class M {
 
       example: qw("a b c>Data") == array( "a", "b" , "c" => "Data")
     */
-    function qw($data, $d_e=" ", $d_v=">") {
+    static function qw($data, $d_e=" ", $d_v=">") {
         if (! is_string($data))
             return $data;
         if (! $data )
@@ -231,7 +236,7 @@ class M {
       qw like function, Quote Keys
       example: qw("a b c>Data") == array( "a" =>true, "b"=>true , "c" => "Data")
     */
-    function qk($data, $d_e=" ", $d_v=">") {
+    static function qk($data, $d_e=" ", $d_v=">") {
         if (! is_string($data))
             return $data;
         if (! $data )
@@ -246,5 +251,11 @@ class M {
         }
         return $ret;
     }
+
+    // quote HTML
+    static function qh($text) {
+        return htmlspecialchars($text, ENT_QUOTES);
+    }
+
 
 } // class M

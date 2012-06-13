@@ -174,7 +174,7 @@ final class M_TypedCollection extends M_Collection {
     }
 
     // echo M::Alias(id)->_field
-    function formatMagicField($field, $value, $set = false) {
+    function formatMagicField($field, $value, $set = false) { // magic value
         $T = @$this->type[$field];
         if (! $T)
             throw new Exception("Type required for magic field $field");
@@ -184,8 +184,28 @@ final class M_TypedCollection extends M_Collection {
     }
 
     // M::Alias(id)->_field = "XXX";
-    function setMagicField($field, $value) {
+    function setMagicField($field, $value) { // void
         return $this->formatMagicField($field, $value, 1);
+    }
+
+
+    // apply Mafic types to loaded data
+    // kv - {key:value}
+    function allMagic(array $kv) { // kv << magic representation when possible
+        foreach($this->type as $F => $T) {
+            if (strpos($F, ".")) {
+                // TODO
+                continue;
+            }
+            if (! isset($kv[$F]))
+                continue;
+            try {
+                $kv[$F] = M_Type::getMagic($kv[$F], $T);
+            } catch(Exception $ex) {
+                1; // suppress exceptions
+            }
+        }
+        return $kv;
     }
 
 }

@@ -13,13 +13,18 @@ class M_TypeBase {
 
       3 method per type:
 
-      apply$type($value) => $value
+      Most important: used for inserts, updates, queries
+  
+        apply$type($value) => $value
 
-      // magic field read access
-      get_$type($value) => $value
+  
+      M_Object's Magic Fields getter and setter        
 
-      // magic field write access
-      set_$type($value) => $value
+        // magic field read access
+        get_$type($value) => $value
+
+        // magic field write access
+        set_$type($value) => $value
 
     */
 
@@ -30,6 +35,8 @@ class M_TypeBase {
         if (is_array($T)) { // $T = "ENUM"
             if (! is_scalar($v))
                 return static::e("scalar expected", $v, "[ENUM]");
+            if ( ($_ = array_search($v, $T)) !== false)
+                return $_;
             if (isset($T[$v]))
                 return $v;
             return static::e("bad enum key: $v", 0, "[ENUM]");
@@ -92,6 +99,20 @@ class M_TypeBase {
     // no type enforcement, you can query array with scalar
     static function applyArray($v)  { return $v ? $v : []; }
 
+    
+    // Anti CSS (cross-site scripting) type - text only
+    // all html entities are escaped
+    /*
+      note:
+          keeping escaped text in database is not a best practice,
+          but this may be useful in cases when field should never have html inside
+
+          with some hassle you can achieve similar behaviour with regular strings
+          via magic get: check get_String 
+    */
+    static function applyText($v) {
+        return M::qh((string) $v);
+    }
 
     // fancy types
     static function applyPrice($v) { return round($v, 2); }
@@ -144,14 +165,28 @@ class M_TypeBase {
     // add http:// if not present
     // no <>'" in URLs : css
     // does not check for domain existance
-    static function applyURL($v) {
-        if (! is_string($v))
-            self::e("", $v, "url");
-        $v = filter_var($v, FILTER_SANITIZE_URL);
+    // internally stored without 'http://' prefix
+    // use magic access "_$url" to auto-add http:// (when needed)
+    static function applyURL($v0) {
+        if (! is_string($v0))
+            self::e("", $v0, "url");
+        // $v = filter_var($v0, FILTER_SANITIZE_URL);
+        // ^^^ sanitize is stupid
+        $v = trim($v0);
+        if (! $v)
+            return null;
         if (! preg_match('!^https?://!', $v))
             $v="http://".$v;
+
         $v = str_replace(array("<", ">",'"',"'"), "", $v); // avoid css
         $v = filter_var($v, FILTER_VALIDATE_URL);
+        
+        // we do not store 'http://' prefix
+        if (substr($v, 0, 7)=='http://')
+            $v = substr($v, 7);
+        if (! $v)
+            self::e("bad url: $v0", $v0, "url");        
+        
         return $v;
     }
 
@@ -159,7 +194,9 @@ class M_TypeBase {
     static function applyName($v) {
         if (! is_string($v))
             self::e("", $v, "url");
-        $v=preg_replace("![^\w ]!", "", trim($value));
+        $v = preg_replace("![^\w ]!", "", trim($v));
+        $v = preg_replace("!\d!", "", $v);
+        $v = preg_replace("!\s+!", " ", $v);
         return ucwords(strtolower($v));
     }
 
@@ -188,16 +225,23 @@ class M_TypeBase {
     // getMagic
     //
 
-    static function get_Array($v) {
+
+    static function get_Array($v) { // json
         return json_encode((array)$v);
     }
 
-    static function get_Int($v) {
+    static function get_Int($v) { // 99,999,999
         return number_format((int)$v);
     }
 
-    static function get_Float($v) {
+    static function get_Float($v) { // 999,999.00
         return number_format((float)$v, 2);
+    }
+
+    // Anti CSS (cross-site scripting) string representation
+    // all html entities are escaped
+    static function get_String($v) { // &ltscript
+        return M::qh($v);
     }
 
     static function get_Price($v) {
@@ -238,6 +282,16 @@ class M_TypeBase {
         case 10: return substr($ph,0,3)."-".phone_format(substr($ph,3));
         }
         return self::_international_phone_format($ph);
+    }
+    
+    // auto-add http:// prefix
+    // https urls are always stored with prefix
+    static function get_URL($v) {
+        if (! $v)
+            return "";
+        if (substr($v, 0, 4)!=='http')
+            return "http://$v";
+        return $v;
     }
 
 
@@ -309,5 +363,16 @@ class M_TypeBase {
         return strtotime($v);
     }
 
+    // no exception for bad urls:
+    // saves null instead of bad urls
+    static function set_URL($v) {
+        try {
+            $v = static::applyURL($v);
+        } catch(InvalidArgumentException $ex) {
+            $v = "";
+        }
+        return $v;
+    }
+    
 
 } // M_TypeBase

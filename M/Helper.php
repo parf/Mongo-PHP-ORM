@@ -217,6 +217,79 @@ class M_Helper {
         return $R["retval"];
     }
 
+
+
+    // MongoCollection::ensureIndex wrapper
+    // Check for Indexes, report if unknown indexes found
+    //
+    // see M::db_collection for $collection format
+    //
+    // Examples:
+    //  M::index($collection, "field1 field2")           << create 2 indexes
+    //  M::index($collection, "field1,field2")           << create 1 composite field index
+    //  M::index($collection, "!field")                  << uqique index
+    //  M::index($collection, "*field")                  << sparse index
+    //  M::index($collection, "!*field")                 << uqique+sparse index (unique only if field exists)
+    //
+    static function index($db_collection, $fields, $echo=1) {
+        if (is_string($db_collection))
+            $c=M::i($db_collection);
+        
+        $current_indexes=$c->getIndexInfo(); // array of {name: xxx, ... }
+        $ci=array();
+        foreach($current_indexes as $i)
+            $ci[$i["name"]]=1;
+
+        #$c->deleteIndexes();
+        $fields=explode(" ", $fields);
+        foreach($fields as $f) {
+            $o=array(); // options
+            $so=array();     //
+            if ($f[0]=="!") {
+                $f=substr($f,1);
+                $o["unique"]=true;
+                $so[]="uniq";
+            }
+            if ($f[0]=="*") {
+                $f=substr($f,1);
+                $o["sparse"]=true;
+                $so[]="sp";
+            }
+            $index_name=str_replace( array(",", "."), "_","$f");
+            if ($so)
+                $index_name=join("_",$so)."_".$index_name;
+
+            if ($ci[$index_name]) { // index exists
+                echo "- Index $index_name exists, skipping\n";
+                $ci[$index_name]=2; // index processed
+                continue;
+            }
+
+            $fields=array();
+            foreach( explode(",", $f) as $fn )
+                $fields[$fn]=1;
+
+            $c->ensureIndex($fields, $o + array("name" => $index_name));
+
+            if ($echo)
+                echo "Indexing ($index_name) ".($o?json_encode($o):"")." $f in ".$c."\n";
+        } //
+
+        // Show unknown indexes
+        foreach($ci as $index => $x) {
+            if ($x!=1) continue;
+            if ($index=="_id_") continue;
+
+            echo "** unknown index : $index \n";
+
+            // !!! MongoCollection::deleteIndex() cannot delete custom-named
+
+            #$c->deleteIndex($index);
+            #M()->command(array("deleteIndexes" => $collection->getName(), "index" => "superfast query");
+        }
+
+    }
+
 }
 
 ?>

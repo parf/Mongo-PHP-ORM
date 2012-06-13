@@ -18,6 +18,11 @@ class M_Something extends M_Router {
     function doit() {
         return "some business function associated with collection";
     }
+
+    // static method in object = method in collection
+    static function static_finder($a) {
+	return ["static M_Object methods are mapped to M_Collection methods", "param: ".$a];
+    }
  
 } // M_Something
 

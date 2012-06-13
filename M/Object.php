@@ -48,6 +48,8 @@ class M_Object implements ArrayAccess {
     protected $loaded=false;   // false - DATA NOT LOADED
     protected $D=[];      // read data cache
 
+    static $debug = 0;
+
     // instantiate object by id (primary key)
     // do not overload - overload _i() instead
     static function i($MC, $id, $autoload=true) { # instance | NotFoundException
@@ -134,6 +136,7 @@ class M_Object implements ArrayAccess {
         } else {
             Profiler::in_off("M:load", "".$this);
             $this->D = $this->MC->findOne($this->id);
+
             $this->loaded = true;
         }
         Profiler::out();
@@ -161,6 +164,9 @@ class M_Object implements ArrayAccess {
     function get($fields="") { # {field:value}
         $fields = $this->MC->_fields($fields);
         $this->load($fields);
+        if(!$fields && $this->loaded)
+            return $this->D;
+
         $r = [];
         foreach($fields as $f)
             $r[$f] = isset($this->D[$f]) ? $this->D[$f] : $this->__get($f);
@@ -248,8 +254,14 @@ class M_Object implements ArrayAccess {
         Profiler::in_off("M:set", ["".$this, $a]);
         $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
         Profiler::out();
-        foreach($a as $k => $v)
-            $this->D[$k] = $v;
+        foreach($a as $k => $v) {
+            if ($p=strpos($k, '.')) {
+                $this->loaded = false;
+                unset($this->D[ substr($k, 0, $p) ]);
+            } else {
+                $this->D[$k] = $v;
+            }
+        }
         return $this;
     }
 
@@ -420,6 +432,8 @@ class M_Object implements ArrayAccess {
         if ( $key[0] == '_' ) {
             if ($key == '_')
                 return $this->D;
+            if ($key == '__') // magic field representation (when possible)
+                return $this->MC->allMagic($this->D); // typed collection expected
             $key = substr($key, 1);
             return $this->MC->formatMagicField($key, @$this->D[$key]);
         }
@@ -494,26 +508,28 @@ class M_Object implements ArrayAccess {
         $this->D=$D;
     }
 
+    // used for class debug
+    /* internal */ function dbg($msg) {
+        if (self::$debug)
+            echo 'D:'.$this." ".json_encode($msg)."\n";
+    }
+
     // --------------------------------------------------------------------------------
     // Array Access
 
     // getting / setting deep nested items
 
     // M::Col($id)["node.node.field"] = "value";
-
     function offsetSet($offset, $value) {
         $this->set($offset, $value);
-        if (strpos($offset, ".")) {
-            // TODO: update right way
-            $p=explode(".", $offset);
-            $this->reset($p[0]);
-        }
     }
 
+    // unset( $m_object["node.field"] )
     function offsetUnset($offset) {
         $this->_unset($offset);
     }
 
+    // isset( $m_object["node.field"] )
     function offsetExists($offset) { # id of found record
         return $this->MC->one($this->id, $offset);
     }
@@ -522,15 +538,34 @@ class M_Object implements ArrayAccess {
     function offsetGet($offset) { # value
         if (! strpos($offset, "."))
             return $this->__get($offset);
-        $this->load();
-        $r=$this->D;
-        $p=explode(".", $offset);
-        foreach($p as $k) {
-            if (! is_array($r[$k]))
-                return $r[$k];
-            $r= & $r[$k];
+        $magic = 0;
+        if ($offset[0]=='_') {
+            $magic = 1;
+            $offset = substr($offset, 1);
         }
-        return $r;
+        $p=explode(".", $offset);
+        if (! isset($this->D[$p[0]]))
+            $this->load($p[0]);
+        $r=& $this->D;
+        $z = null;
+        foreach($p as $k) {
+            if (! isset($r[$k]))
+                break;
+            if (! is_array($r[$k])) {
+                $z = $r[$k];
+                break;
+            }
+            $r = & $r[$k];
+            $z = $r;
+        }
+        if ($magic && $T=$this->MC->C("field.$offset")) {
+            try {
+                $z = M_Type::getMagic($z, $T);
+            } catch (Exception $ex) {
+                1;
+            }
+        }
+        return $z;
     }
 
 }
@@ -565,6 +600,7 @@ class M_StrictField extends M_Object {
             if ($this->MC->C("field.$key"))
                 throw new DomainException("unknown field $field");
         }
+        parent::set($a);
         return $this;
     }
 

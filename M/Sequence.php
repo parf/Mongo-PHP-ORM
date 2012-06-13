@@ -9,6 +9,7 @@
  * @author parf <parf@comfi.com>
 
  */
+
 class M_Sequence {
 
     /**
