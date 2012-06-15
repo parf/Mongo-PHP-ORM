@@ -168,7 +168,7 @@ final class M_TypedCollection extends M_Collection {
         if ($T) {
             foreach($a as $k => &$_)
                 if ($k > 1)
-                    $_ = M_Type::apply($T, $_);
+                    $_ = M_Type::apply($_, $T);
         }
         call_user_func_array('parent::add', $a);
     }
