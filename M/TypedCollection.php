@@ -196,38 +196,36 @@ final class M_TypedCollection extends M_Collection {
         return $this->formatMagicField($field, $value, 1);
     }
 
-
+    // Human format of already loaded data
     // apply Mafic types to loaded data
     // kv - {key:value}
-    function allMagic(array $kv) { // kv << magic representation when possible
-        foreach($this->type as $F => $T) {
-            if (strpos($F, ".")) {
-                // TODO
+    function allMagic(array $kv, $prefix="") { // kv << magic representation when possible
+        foreach($kv as $k => & $v) {
+            $p = $prefix.$k; // dot separated string path
+            // ARRAY OF {TYPE}
+            if ($T = @$this->type["$p.*"]) {
+                if (! is_array($v)) {
+                    trigger_error("".$this.": node $p must be an array of $T");
+                    die;
+                }
+                $r=[];
+                foreach($v as $_k => $_v)
+                    $r[$_k] = M_Type::getMagic($_v, $T, false);
+                $v = $r;
                 continue;
             }
-            if (! isset($kv[$F]))
+
+            if ($T = @$this->type[$p]) {
+                $v = M_Type::getMagic($v, $T, false);
                 continue;
-            try {
-                $kv[$F] = M_Type::getMagic($kv[$F], $T);
-            } catch(Exception $ex) {
-                1; // suppress exceptions
+            }
+
+            // RECURSION
+            if (is_array($v) && ! isset($v[0])) { // assoc array
+                $v = $this->allMagic($v, "$k.");
             }
         }
         return $kv;
-    }
-
-    // apply Mafic types to loaded data
-    // kv - {key:value}
-    function _new_allMagic(array $kv, $prefix="") { // kv << magic representation when possible
-        foreach($kv as $k => & $v) {
-            if (! isset($this->type[$prefix.$k]))
-                continue;
-
-            // recursion
-
-
-        }
-
     }
 
 
