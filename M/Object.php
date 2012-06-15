@@ -224,9 +224,17 @@ class M_Object implements ArrayAccess {
         return $this;
     }
 
+    // avoid this
+    // - this is not a sql update - it is a sql replace
+    function update(array $r) {
+        Profiler::in_off("M:UPDATE", ["".$this, $r]);
+        $this->reset();
+        $this->MC->update($this->id, $r);
+        Profiler::out();
+    }
+
     // unset - "field field", ["field", "field"], ["field" => x, "field" => x"]
     function _unset($unset="") { # this
-
         if (is_array($unset) && $unset && ! isset($unset[0]))
             $this->reset( array_keys($unset) );
         else
@@ -271,6 +279,7 @@ class M_Object implements ArrayAccess {
     // add one or more values to set
     function add(/* field, value, value, value */) {
         $a=func_get_args();
+        $this->reset($a[0]);
         array_unshift($a, $this->id);
         call_user_func_array([$this->MC, "add"], $a);
         return $this;
@@ -350,11 +359,14 @@ class M_Object implements ArrayAccess {
 
             // MAGIC FIELDS
             if ( $k[0] == '_' ) {
-                if ($k == '_') {
-                    trigger_error("can't assign to $k field");
+                $k = substr($k, 1);
+                if (!$k) {
+                    trigger_error("can't assign to '_' field");
                     die;
                 }
-                $k = substr($k, 1);
+                if ( $fa = $this->MC->C("field-alias.$k") )
+                    $k = $fa;
+
                 $ts[$k] = $this->MC->setMagicField($k, $v);
                 continue;
             }
@@ -435,11 +447,13 @@ class M_Object implements ArrayAccess {
                 return $this->D;
             if ($key == '__') // magic field representation (when possible)
                 return $this->MC->allMagic($this->D); // typed collection expected
-            
-            
-
             $key = substr($key, 1);
-            return $this->MC->formatMagicField($key, @$this->D[$key]);
+            if (! isset($this->D[$key])) {
+                if ( $fa = $this->MC->C("field-alias.$key") )
+                    return $this->__get("_".$fa);
+                return $this->MC->formatMagicField($key, null);
+            }
+            return $this->MC->formatMagicField($key, $this->D[$key]);
         }
 
         // FIELD ALIAS

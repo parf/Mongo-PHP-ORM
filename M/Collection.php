@@ -292,17 +292,22 @@ class M_Collection implements ArrayAccess {
     // smart addToSet
     // add($q, "key", v1, v2, v3, ...)
     // add one or more values to set
-    function add($q, $field /* value, value, value */) {
-        $q = $this->_query($q);
+    function add($q, $field /*, value, value, value */) {
         $a=func_get_args();
         array_shift($a);
         array_shift($a);
-        Profiler::in("M::add", [$this->sdc, $q, $field, $a]);
-        if (count($a) == 1)
-            $this->MC->update($q, ['$addToSet' => [$field => $a[0]]]);
+        return $this->addAll($q, $field, $a);
+    }
+
+    // addToSetAll
+    function addAll($q, $field, array $values) {
+        $q = $this->_query($q);
+        Profiler::in("M::add", ["".$this, $q, $field, $values]);
+        if (count($values) == 1)
+            $this->MC->update($q, ['$addToSet' => [$field => $values[0]]]);
         else
             $this->MC->update( $q,
-                               ['$addToSet' => [$field => ['$each' => $a]]]
+                               ['$addToSet' => [$field => ['$each' => $values]]]
                                );
         Profiler::out();
     }

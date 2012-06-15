@@ -63,6 +63,9 @@ m2:
       autoload: "name age mmm"
 
     typed:
+      field-alias:
+        big_fat_int:int
+        array_of_ip:aip
       field:
         int:int
         arr:array

@@ -175,12 +175,20 @@ final class M_TypedCollection extends M_Collection {
 
     // echo M::Alias(id)->_field
     function formatMagicField($field, $value, $set = false) { // magic value
+        $op = ["M_Type", $set ? "setMagic" : "getMagic"];
         $T = @$this->type[$field];
-        if (! $T)
+        if (! $T) {
+            if ($T = @$this->type["$field.*"]) {
+                if (! is_array($value))
+                    return (array) $value;
+                $r=[];
+                foreach($value as $k => $v)
+                    $r[$k] = $op($v, $T);
+                return $r;
+            }
             throw new Exception("Type required for magic field $field");
-        if ($set)
-            return M_Type::setMagic($value, $T);
-        return M_Type::getMagic($value, $T);
+        }
+        return $op($value, $T);
     }
 
     // M::Alias(id)->_field = "XXX";
@@ -217,7 +225,7 @@ final class M_TypedCollection extends M_Collection {
 
             // recursion
 
-            
+
         }
 
     }

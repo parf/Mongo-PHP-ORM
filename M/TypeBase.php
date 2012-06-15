@@ -72,6 +72,9 @@ class M_TypeBase {
         $m = ["M_Type", "set_".$T]; // ucfirst(strtolower($T));
         if ( is_callable($m) )
             return $m($v);
+        $m = ["M_Type", "apply".$T]; // ucfirst(strtolower($T));
+        if ( is_callable($m) )
+            return $m($v);
         throw new DomainException("set_Field: unknown magic type: $T");
     }
 
@@ -357,6 +360,16 @@ class M_TypeBase {
 
     static function set_IP($v) {
         return ip2long($v);
+    }
+
+    // all non-numeric chars are removed
+    static function set_Int($v) {
+        return (int) preg_replace("![^\d]!", "", $v);
+    }
+
+    // all non-numeric chars are removed
+    static function set_Float($v) {
+        return (float) preg_replace("![^\d\.]!", "", $v);
     }
 
     static function set_Date($v) {
