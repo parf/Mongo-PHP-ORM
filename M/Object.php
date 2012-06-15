@@ -226,6 +226,7 @@ class M_Object implements ArrayAccess {
 
     // unset - "field field", ["field", "field"], ["field" => x, "field" => x"]
     function _unset($unset="") { # this
+
         if (is_array($unset) && $unset && ! isset($unset[0]))
             $this->reset( array_keys($unset) );
         else
@@ -369,7 +370,7 @@ class M_Object implements ArrayAccess {
 
             $ts[$k] = $v;
 
-            if ($this->MC->C("field.$k") == 'array' && ! is_array($value)) {
+            if ($this->MC->C("field.$k") == 'array' && ! is_array($v)) {
                 trigger_error("can't assign scalar to array");
                 die;
             }
@@ -434,6 +435,9 @@ class M_Object implements ArrayAccess {
                 return $this->D;
             if ($key == '__') // magic field representation (when possible)
                 return $this->MC->allMagic($this->D); // typed collection expected
+            
+            
+
             $key = substr($key, 1);
             return $this->MC->formatMagicField($key, @$this->D[$key]);
         }

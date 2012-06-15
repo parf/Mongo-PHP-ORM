@@ -208,6 +208,22 @@ final class M_TypedCollection extends M_Collection {
         return $kv;
     }
 
+    // apply Mafic types to loaded data
+    // kv - {key:value}
+    function _new_allMagic(array $kv, $prefix="") { // kv << magic representation when possible
+        foreach($kv as $k => & $v) {
+            if (! isset($this->type[$prefix.$k]))
+                continue;
+
+            // recursion
+
+            
+        }
+
+    }
+
+
+
 }
 
 ?>
