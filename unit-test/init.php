@@ -20,9 +20,9 @@ function M($sdc='', $id=false) { # Mongo | M_Collection | M_Object
 // You do not need this if you have autoload
 // Place classes in appropriate directories
 
-include __DIR__."/../M/M.php";
+include __DIR__."/../M/M2.php";
 
 # we are using stock types
-include __DIR__."/../M/Type.php";
+class M_Type extends M_TypeBase {}
 
 include __DIR__."/M_Something.php"; // sample M_Object extension

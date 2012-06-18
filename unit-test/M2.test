@@ -325,7 +325,7 @@ $u->_undefined_magic_field;
 
 ; $T=M::Typed();
 $T->type;
-#={"_id":"int","ai.*":"int","aip.*":"ip","arr":"array","as.*":"string","date":"date","datetime":"DateTime","dt":"datetime","en":["name","age","sex"],"int":"int","ip":"ip","map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+#={"_id":"int","ai.*":"int","aip.*":"ip","aip.2":"ip","arr":"array","as.*":"string","date":"date","datetime":"DateTime","dt":"datetime","en":["name","age","sex"],"int":"int","ip":"ip","map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
 
 ; $T->insert( ["_id" => 2, "int" => 1] );
 ; $T->insert( ["_id" => 3, "int" => "a"] );
@@ -372,8 +372,7 @@ $T[1]["ai"];
 #=[0,0,1]
 
 # *:string
-$T->push(1, "as", "abc")->push(1, "as", 0)->push(1, "as", 1.1);
-#={"class":"M_TypedCollection","0":{"type":{"int":"int","arr":"array","t.s":"string","t.i":"int","t.a":"array","t.f":"float","t.b":"bool","t.d":"date","t.ip":"ip","ai.*":"int","as.*":"string","aip.*":"ip","en":["name","age","sex"],"map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"date":"date","datetime":"DateTime","ph":"phone","ip":"ip","usd":"price","dt":"datetime","u":"url","text":"text","str":"string","name":"name","_id":"int"},"name":"test.typed","sdc":"test.typed","server":""}}
+; $T->push(1, "as", "abc")->push(1, "as", 0)->push(1, "as", 1.1);
 $T[1]["as"];
 #=["abc","0","1.1"]
 
@@ -391,21 +390,23 @@ $T(1)["_aip"];
 $T(1)->reload()->aaa;
 #={"b":{"c":[1,2,3]}}
 
+$t=$T(1);
+#={"class":"M_Object","0":{"id":1}}
 // no reload, M_Object layer always work
-; $T(1)->add("aaa.b.d", 4, 5, 6);
-$T(1)->aaa;
+; $t->add("aaa.b.d", 4, 5, 6);
+$t->aaa;
 #={"b":{"c":[1,2,3],"d":[4,5,6]}}
 
 // ALIAS OF MAGIC FIELD - GET
-; $T(1)->int = 123456;
-$T(1)->big_fat_int;
+; $t->int = 123456;
+$t->big_fat_int;
 #=123456
-$T(1)->_big_fat_int;
+$t->_big_fat_int;
 #="123,456"
 
 // ALIAS OF MAGIC FIELD - SET
-; $T(1)->_big_fat_int = "and the number is 987,000";
-$T(1)->int;
+; $t->_big_fat_int = "and the number is 987,000";
+$t->int;
 #=987000
 
 # SEQUENCE
@@ -637,32 +638,48 @@ $t["_t.ip"];
 ; $t["aip.0"] = 3232235778;
 $t["aip.0"];
 #=3232235778
+
+// Magic field.{number} syntax is unsupported by type+magic system
+// however you can explicitely define type to "aip.0", then it will work
 $t["_aip.0"];
+#=3232235778
+
+$t->_aip;
+#=["192.168.1.2","192.168.1.2"]
+
+// this syntax is supported
+$t->_aip[0];
 #="192.168.1.2"
 
-; $t["aip.1"] = '192.168.0.1';
+// field.{number} this syntax is unsupported by type system
+; $t["aip.1"] = '192.168.0.1'; // unsupported unless explicitely defined
 $t["aip.1"];
-#=3232235521
-$t["_aip.1"];
 #="192.168.0.1"
+$t["_aip.1"]; // unsupported unless explicitely defined
+#="192.168.0.1"
+; $t["aip.1"] = M_Type::applyIP('10.0.0.1');
+$t["aip.1"];
+#=167772161
+
 
 ; $t->addToSet("aip", '192.168.1.1');
 $t["aip.2"];
 #=3232235777
+
+// explicit "aip.2" type defined
 $t["_aip.2"];
 #="192.168.1.1"
 
-$t->reload()->aip;
-#=["BUG", 3232235778,"192.168.0.1",3232235777]
+$t->aip;
+#=[3232235778,167772161,3232235777]
 
 // ALL FIELDS
 $t->_;
-#={"_id":1,"aaa":{"b":{"c":[1,2,3],"d":[4,5,6]}},"ai":[0,0,1],"aip":[3232235778,"192.168.0.1",3232235777],"as":["abc","0","1.1"],"date":1337918400,"datetime":1337973872,"en":1,"int":1234567890,"ip":3232235778,"map":"ka","name":"Sergey Parf Script","ph":8675583979813,"str":"<script> alert(\"got u\") <\/script>","t":{"ip":3232235778},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":null}
+#={"_id":1,"aaa":{"b":{"c":[1,2,3],"d":[4,5,6]}},"ai":[0,0,1],"aip":[3232235778,167772161,3232235777],"as":["abc","0","1.1"],"date":1337918400,"datetime":1337973872,"en":1,"int":1234567890,"ip":3232235778,"map":"ka","name":"Sergey Parf Script","ph":8675583979813,"str":"<script> alert(\"got u\") <\/script>","t":{"ip":3232235778},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":null}
 
 // ALL FIELDS as MAGIC
 $t->__;
-#={"_id":"1","aaa":{"b":{"c":[1,2,3]}},"ai":[0,0,1],"aip":["192.168.0.1","192.168.1.1"],"as":["abc","0","1.1"],"date":"May 25, 2012","datetime":"May 25, 2012 03:24PM","en":"age","int":"1,234,567,890","ip":"192.168.1.2","map":"kaksi","name":"Sergey Parf Script","ph":"+86 7558-397-9813","str":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\/script&gt;","t":{"ip":3232235778},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":null}
-
+#={"_id":"1","aaa":{"b":{"c":[1,2,3],"d":[4,5,6]}},"ai":["0","0","1"],"aip":["192.168.1.2","10.0.0.1","192.168.1.1"],"as":["abc","0","1.1"],"date":"May 25, 2012","datetime":"May 25, 2012 03:24PM","en":"age","int":"1,234,567,890","ip":"192.168.1.2","map":"kaksi","name":"Sergey Parf Script","ph":"+86 7558-397-9813","str":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\/script&gt;","t":{"ip":"192.168.1.2"},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":""}
 
 
 // Extending M_Object 

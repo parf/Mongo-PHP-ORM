@@ -79,6 +79,7 @@ m2:
         ai.*:int
         as.*:string
         aip.*:ip
+        aip.2:ip
         en: ["name", "age", "sex"]
         map:
             y: yksi
