@@ -283,6 +283,10 @@ class M_Collection implements ArrayAccess {
             }
             $r[1] = [$r[1] => $r[2]];
         }
+
+        if ($fa = $this->C("field-alias"))
+            $r[1] = $this->_kv_aliases($fa, $r[1]);
+
         Profiler::in_off("M2:$op", [$this->sdc, $r[1]]);
         $this->update($r[0], [$op => $r[1]]);
         Profiler::out();
@@ -518,6 +522,8 @@ class M_Collection implements ArrayAccess {
     function insert(array $data, array $options=[]) { # ID
         if (! isset($data["_id"]))
             $data["_id"]=self::next();
+        if ($fa = $this->C("field-alias"))
+            $data = $this->_kv_aliases($fa, $data);
         $this->MC->insert($data, $options);
         return $data["_id"];
     }
@@ -648,16 +654,59 @@ class M_Collection implements ArrayAccess {
     function _query($q) { # q
         if (! is_array($q))
             return ["_id" => (int)$q];
+        if ($fa = $this->C("field-alias"))
+            return $this->_kv_aliases($fa, $q);
         return $q;
     }
 
-    // fields
-    function _fields($fields) {
+    // support for aliases in {KEY => QUERY} data
+    // 
+    // fa - field => alias, q - query as {K => V}
+    // used for:
+    //   finders
+    //   insert
+    //   update ops (set, inc, addToSet, ...)
+    // is not used in generic update
+    private function _kv_aliases($fa, array $q) {
+        $f = 0; // alias found flag
+        foreach ($q as $f => $v)
+            if (isset($fa[$f])) {
+                $f=1;
+                break;
+            }
+        if (! $f) // no aliases found
+            return $q;
+        $q2 = [];
+        foreach ($q as $f => $v)
+            if (isset($fa[$f]))
+                $q2[$fa[$f]] = $v;
+                else 
+                    $q2[$f] = $v;
+        return $q2;
+    }
+
+    // fields - space delimited string, array of fields, array of key => (1 | -1)
+    // aliases are supported only in string representation
+    function _fields($fields) { # fields as array
+        if (! $fields)
+            return [];
         if (is_array($fields))
             return $fields;
-        if (! $fields)
-            return array();
-        return explode(" ", $fields);
+        $f = explode(" ", $fields);
+        if ($fa = $this->C("field-alias"))
+            return $this->_fields_aliases($fa, $f);
+        return $f;
+    }
+
+    // support for aliases in query
+    // fa - field => alias
+    // q  - query - list of fields
+    private function _fields_aliases($fa, array $q) {
+        foreach ($q as &$f) {
+            if (isset($fa[$f]))
+                $f = $fa[$f];
+        }
+        return $q;
     }
 
     function applyTypes(array $kv) {

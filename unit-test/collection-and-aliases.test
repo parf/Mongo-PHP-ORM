@@ -1,0 +1,35 @@
+#!/bin/env spartan-test
+
+// ALIASES in COLLECTIONS
+; $B = M::Base();
+$B->C("field-alias");
+#={"name-alias":"name","name_alias":"name"}
+; $B->remove([]);
+// reset sequence for M::Base
+; M_Sequence::reset("".$B);
+; $B->insert(["name" => "test1"]);
+; $B->insert(["name" => "test2"]);
+
+// ALIAS + INSERT
+; $B->insert(["name_alias" => "test3"]);
+M::Base()->f([], "name");
+#={"2":{"_id":2,"name":"test1"},"3":{"_id":3,"name":"test2"},"4":{"_id":4,"name":"test3"}}
+
+// ALIAS in QUERY: FIELD LIST
+M::Base()->f([], "name-alias");
+#={"2":{"_id":2,"name":"test1"},"3":{"_id":3,"name":"test2"},"4":{"_id":4,"name":"test3"}}
+
+// ALIAS in QUERY: QUERY
+M::Base()->findOne(["name-alias" => "test3"]);
+#={"_id":4,"name":"test3"}
+
+// ALIAS in OPERATION
+; $B->set(3, ["name-alias" => 2]);  // changing type to int as well
+$B[3];
+#={"_id":3,"name":2}
+; $B->inc(3, "name-alias");       // update sub-operation
+$B[3];
+#={"_id":3,"name":3}
+; $B->dec(3, "name-alias", 10);       // update sub-operation
+$B[3];
+#={"_id":3,"name":-7}
