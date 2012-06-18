@@ -1,0 +1,45 @@
+#!/bin/env spartan-test
+
+; $T=M::Typed();
+$T->type["aip.*"]; // array of IP class
+#="ip"
+
+; $T->remove([]); // remove all
+; $T->insert(["_id" => 1]);
+; $t=$T(1);
+
+; $t->add("aip", "192.168.0.1", 3232235778, '10.0.0.1', '4.4.4.4');
+
+$t->aip;
+#=[3232235521,3232235778,167772161,67372036]
+
+// MAGIC Field - human reabable presentation
+// Type: "aip.*:ip"
+$t->_aip;
+#=["192.168.0.1","192.168.1.2","10.0.0.1","4.4.4.4"]
+$t["_aip"];
+#=["192.168.0.1","192.168.1.2","10.0.0.1","4.4.4.4"]
+$t->_aip[1];
+#="192.168.1.2"
+
+$t["aip.1"];
+#=3232235778
+$t->{"aip.1"};
+#=null
+
+// We do not want to support this notation - magic field + numeric index
+$t["_aip.1"];
+#=3232235778
+// ^^ no magic expansion
+
+// Specially defined type for "aip.2" will always work for direct saves / reads
+$t["_aip.2"];
+#="10.0.0.1"
+
+// loaded data dump
+$t->_;
+#={"_id":1,"aip":[3232235521,3232235778,167772161,67372036]}
+
+// data dump in human representation
+$t->__;
+#={"_id":"1","aip":["192.168.0.1","192.168.1.2","10.0.0.1","4.4.4.4"]}
