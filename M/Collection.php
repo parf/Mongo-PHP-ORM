@@ -145,17 +145,26 @@ class M_Collection implements ArrayAccess {
         return iterator_to_array( $this->find($query, $fields) );
     }
 
-    // alias of f, legacy syntax support
-    function find_a($query, $fields="") { # 
-        return iterator_to_array( $this->find($query, $fields) );
-    }
-
-    // find wrapper - return array of M_Object
-    function findO($query) { # [M_Object, ...]
+    // find wrapper - return array of {_id => M_Object}
+    function fo($query, $fields="") { # [M_Object, ...]
         $r = [];
-        foreach ($this->find($query) as $e)
+        foreach ($this->find($query, $fields) as $e)
             $r[$e["_id"]]=$this->go_d($e);
         return $r;
+    }
+
+    // Safe find Objects
+    // find wrapper - return array of M_Object
+    function sfo($query, $fields="") { # [M_Object, ...]
+        $r = [];
+        foreach ($this->sf($query, $fields) as $e)
+            $r[$e["_id"]]=$this->go_d($e);
+        return $r;
+    } 
+
+    // alias of fo - findObjects
+    function findO($query, $fields="") { # [M_Object, ...]
+        return $this->fo($query, $fields);
     }
 
     // find records with specified ids
