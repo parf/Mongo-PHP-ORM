@@ -48,7 +48,7 @@ class M_TypeBase {
     }
 
     // M_Object magic field formatting
-    PUBLIC static function getMagic($v, $T) { # $v
+    PUBLIC static function getMagic($v, $T, $exception=true) { # $v
         if (is_array($T)) {
             if (! is_scalar($v))
                 return static::e("scalar expected", $v, "getMagic [ENUM]");
@@ -57,6 +57,8 @@ class M_TypeBase {
         $m = ["M_Type", "get_".$T]; // ucfirst(strtolower($T));
         if ( is_callable($m) )
             return $m($v);
+        if (! $exception)
+            return $v;
         throw new DomainException("get_Field: unknown magic type: $T");
     }
 

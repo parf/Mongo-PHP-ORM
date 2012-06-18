@@ -15,10 +15,6 @@
 
 
 require __DIR__."/M.php";
-require __DIR__."/Collection.php"; // M_Collection
-require __DIR__."/TypeBase.php";    // M_TypeBase
-require __DIR__."/TypedCollection.php"; // M_Collection
-require __DIR__."/Object.php"; // M_Object
 require __DIR__."/Sequence.php"; // M_Sequence
 require __DIR__."/Helper.php"; // M_Helper
 

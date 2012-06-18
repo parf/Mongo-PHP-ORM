@@ -43,12 +43,12 @@ mongo-$server:
  *
  **/
 
-include __DIR__."/Collection.php"; // M_Collection
-include __DIR__."/TypeBase.php";    // M_TypeBase
-include __DIR__."/TypedCollection.php"; // M_Collection
-include __DIR__."/Object.php"; // M_Object
-include __DIR__."/Sequence.php"; // M_Sequence
-include __DIR__."/Helper.php"; // M_Helper
+// include M2.php if you want to load all M2 classes at once
+
+require __DIR__."/TypeBase.php";    // Types definition
+require __DIR__."/Collection.php"; // Collection
+require __DIR__."/TypedCollection.php"; // Type support
+require __DIR__."/Object.php"; // ORM
 
 class M {
 

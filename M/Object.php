@@ -51,7 +51,6 @@ class M_Object implements ArrayAccess {
     static $debug = 0;
 
     // instantiate object by id (primary key)
-    // do not overload - overload _i() instead
     static function i($MC, $id, $autoload=true) { # instance | NotFoundException
         if ($o=$MC->_getObject($id))
             return $o;
@@ -577,11 +576,7 @@ class M_Object implements ArrayAccess {
             $z = $r;
         }
         if ($magic && $T=$this->MC->C("field.$offset")) {
-            try {
-                $z = M_Type::getMagic($z, $T);
-            } catch (Exception $ex) {
-                1;
-            }
+            $z = M_Type::getMagic($z, $T, false);
         }
         return $z;
     }
