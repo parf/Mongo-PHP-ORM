@@ -16,6 +16,7 @@ use M("db.col") or M("Alias") or M::Alias to instantiate
   Adds new functions (expose mongo builtin functions on the top level
   Adds support for TYPIZATION via M_TypedCollection class
   Provides ORM via M_Object class
+  Supports field aliases
 
 
   Better way to call exising functions:
@@ -46,15 +47,17 @@ use M("db.col") or M("Alias") or M::Alias to instantiate
     * group_by -
       group by impementation with min, max, sum, count
 
+  * fields aliases
+  * Types - see TypedCollection
 
 Use:
   M::Alias()->method(..)               << recommended
   M("account.account")->method(..)
 
-  M::Alias()[$id] << PK lookup - get all fields
-  M::Alias()->_() << get original MongoCollection
+  M::Alias()[$id]  << PK lookup - get all (autoload) fields
+  M::Alias()->MC() << get original MongoCollection
 
-  * Instead of ["_id" => $id] you can just pass $id,
+  * Instead of ["_id" => (int) $id] you can just pass $id
 
 
 See also:
@@ -64,7 +67,7 @@ See also:
 
 class M_Collection implements ArrayAccess {
 
-    const VERSION=2.0;
+    const VERSION=2.1;
 
     public $name;       // db.col
     public $sdc;        // server:db.col | db.col
@@ -558,6 +561,12 @@ class M_Collection implements ArrayAccess {
         Profiler::out();
         return $r;
     }
+    
+    // remove all data, keep indexes, reset sequences
+    function reset() {
+        $this->remove([]);
+        M_Sequence::reset("".$this);
+    }
 
     // --------------------------------------------------------------------------------
     // Internals
@@ -667,7 +676,7 @@ class M_Collection implements ArrayAccess {
     //   insert
     //   update ops (set, inc, addToSet, ...)
     // is not used in generic update
-    private function _kv_aliases($fa, array $q) {
+    protected function _kv_aliases($fa, array $q) {
         $f = 0; // alias found flag
         foreach ($q as $f => $v)
             if (isset($fa[$f])) {
@@ -701,7 +710,7 @@ class M_Collection implements ArrayAccess {
     // support for aliases in query
     // fa - field => alias
     // q  - query - list of fields
-    private function _fields_aliases($fa, array $q) {
+    protected function _fields_aliases($fa, array $q) {
         foreach ($q as &$f) {
             if (isset($fa[$f]))
                 $f = $fa[$f];

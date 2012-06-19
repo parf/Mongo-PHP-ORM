@@ -35,7 +35,7 @@ class M_Sequence {
             self::create($name);
             return self::next($name, $inc, false);
         }
-        trigger_error("SEQUENCE: Unexpected result from sequence '$name': ".json_encode($r));
+        trigger_error("SEQUENCE: Unexpected result from sequence '$name': ".json_encode($r), E_USER_ERROR);
         die;
     }
 
@@ -57,7 +57,7 @@ class M_Sequence {
             self::create($name, 0);
 
         if ($last >= $val) {
-            trigger_error("SEQUENCE: $name must be larger than $last");
+            throw new RuntimeException("SEQUENCE: $name must be larger than $last");
             die;
         }
 
@@ -81,12 +81,12 @@ class M_Sequence {
      */
     static function reset($name, $val=false) { # null
         if (!self::last($name)) {
-            trigger_error("SEQUENCE: no such sequence: $name");
+            trigger_error("SEQUENCE: no such sequence: $name", E_USER_ERROR);
             die;
         }
 
         if ($val===false)
-            $val=self::lastDb($name)+1;
+            $val=self::lastDb($name);
 
         self::MC($name)->update(
                                ["_id" => (string) $name],
@@ -125,7 +125,7 @@ class M_Sequence {
     private static function enforce_namespace($name) { # bool
         list($db,$mycol) = explode('.', $name, 2);
         if (!$mycol) {
-            trigger_error('SEQUENCE: sequence name must be in "db.col" format');
+            trigger_error('SEQUENCE: sequence name must be in "db.col" format', E_USER_ERROR);
             die;
         }
     }

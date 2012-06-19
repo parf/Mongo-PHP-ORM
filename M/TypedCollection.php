@@ -21,6 +21,33 @@ final class M_TypedCollection extends M_Collection {
         parent::__construct($server, $sdc);
     }
 
+    // find with Magic Fields Support ($fields)
+    // "_alias" syntax is not supported
+    // result will have all original find fields and all magic fields
+    function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields }}
+        if (! is_string($fields))
+            throw new InvalidArgumentException("string field list expected");
+
+        $fields = explode(" ", $fields);
+        $mf = []; // magic fields
+        foreach($fields as & $f) {
+            if ($f[0]!='_')
+                continue;
+            $f = substr($f, 1);
+            $mf[$f] = $this->type[$f];
+        }
+        if (! $mf)
+            throw new InvalidArgumentException("no magic fields in query field list");
+
+        $z = $this->f($q, $fields); // result
+        foreach($z as &$r) {
+            foreach($mf as $f => $T)
+                if (isset($r[$f]))
+                    $r["_".$f] = M_Type::getMagic($r[$f], $T);
+        }
+        return $z;
+    }
+
     // insert, $set
     // array type enforced
     function applyTypes(array $kv) {  # $kv
@@ -45,9 +72,11 @@ final class M_TypedCollection extends M_Collection {
 
         static $logic = array('$or'=>1, '$and'=>1, '$nor' =>1);
 
+        if ($fa = $this->C("field-alias"))
+            return $this->_kv_aliases($fa, $kv);
+
         // kv is an array
         foreach($kv as $k => &$v) {
-
             // logic: {$op: [$k,$k,...]}
             // $or, $and, $nor
             if ($k[0] == '$') { // $and $or $nor

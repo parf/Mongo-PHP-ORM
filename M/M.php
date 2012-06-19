@@ -45,10 +45,11 @@ mongo-$server:
 
 // include M2.php if you want to load all M2 classes at once
 
-require __DIR__."/TypeBase.php";    // Types definition
-require __DIR__."/Collection.php"; // Collection
-require __DIR__."/TypedCollection.php"; // Type support
-require __DIR__."/Object.php"; // ORM
+require_once __DIR__."/TypeBase.php";        // Types definition
+require_once __DIR__."/Collection.php";      // Collection
+require_once __DIR__."/TypedCollection.php"; // Type support
+require_once __DIR__."/Object.php";          // ORM
+require_once __DIR__."/Sequence.php";        // Sequence
 
 class M {
 

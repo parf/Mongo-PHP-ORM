@@ -15,7 +15,6 @@
 
 
 require __DIR__."/M.php";
-require __DIR__."/Sequence.php"; // M_Sequence
 require __DIR__."/Helper.php"; // M_Helper
 
 class M2 extends M {
