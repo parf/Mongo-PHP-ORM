@@ -756,6 +756,38 @@ $c->Manager->name;
 #="Bob"
 
 // M_Object Static methods are mapped to Collection methods
+$C->static_finder("my complex param");
+#=["static M_Object methods are mapped to M_Collection methods","param: my complex param"]
 
 
+
+
+// TypedCollection magic fields query support
+
+; $T = M::Typed();  // typed collection
+$T->type["ph"];     // phone type field
+#="phone"
+; M_Sequence::set("".$T, 100);
+
+; $T->insert(["ph" => "(617) 372-0000"]);
+; $T->insert(["ph" => "7 495 726-0000"]);
+; $T->insert(["ph" => "+49 221 828 1234"]);
+
+// query all phone fields
+$T->f(['ph' => ['$exists' => true]], "ph");    
+#={"1":{"_id":1,"ph":8675583979813},"101":{"_id":101,"ph":16173720000},"102":{"_id":102,"ph":74957260000},"103":{"_id":103,"ph":492218281234}}
+// Find as Objects - Object List
+$ol = $T->fo(['ph' => ['$exists' => true]]);    
+#={"1":{"id":1},"101":{"id":101},"102":{"id":102},"103":{"id":103}}
+
+$ol[101]->_ph;
+#="1-617-372-0000"
+$ol[102]->_ph;
+#="+7 495-726-0000"
+$ol[103]->_ph;
+#="+49 221-828-1234"
+
+// Magic
+// $T->fm([], []);
+//; $T->fm([], "_ph");    
 
