@@ -26,7 +26,7 @@ final class M_TypedCollection extends M_Collection {
     // result will have all original find fields and all magic fields
     function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields }}
         if (! is_string($fields))
-            throw new InvalidArgumentException("string field list expected");
+            throw new InvalidArgumentException("field list must be string");
 
         $fields = explode(" ", $fields);
         $mf = []; // magic fields
@@ -37,7 +37,7 @@ final class M_TypedCollection extends M_Collection {
             $mf[$f] = $this->type[$f];
         }
         if (! $mf)
-            throw new InvalidArgumentException("no magic fields in query field list");
+            throw new InvalidArgumentException("no magic fields in queried");
 
         $z = $this->f($q, $fields); // result
         foreach($z as &$r) {

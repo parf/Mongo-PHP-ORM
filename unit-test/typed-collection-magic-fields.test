@@ -1,14 +1,11 @@
 #!/bin/env spartan-test
 <?
 
-include_once "init.php";
-#=true
-
 // TypedCollection magic fields query support
 
 ; $T = M::Typed();  // typed collection
-; $T->reset();        // drop all data, reset sequence
-$T->type["ph"];     // phone type field
+; $T->reset();      // drop all data, reset sequence
+$T->type["ph"];     // field "ph" have type "phone"
 #="phone"
 
 // prepare data
@@ -20,9 +17,9 @@ $T->type["ph"];     // phone type field
 $T->f(['ph' => ['$exists' => true]], "ph");
 #={"1":{"_id":1,"ph":16173720000},"2":{"_id":2,"ph":74957260000},"3":{"_id":3,"ph":492218281234}}
 // Find as Objects - Object List
-$ol = $T->fo(['ph' => ['$exists' => true]], "ph");
-#={"1":{"id":1},"2":{"id":2},"3":{"id":3}}
+; $ol = $T->fo(['ph' => ['$exists' => true]], "ph");
 
+// magic field get = human-readable representation of field
 $ol[1]->_ph;
 #="1-617-372-0000"
 $ol[2]->_ph;
@@ -37,9 +34,9 @@ $T->fm([], "_ph");
 // fm will throw exceptions
 // 1. field list must be sting
 $T->fm([], []);
-#=["InvalidArgumentException","string field list expected",0]
+#=["InvalidArgumentException","field list must be string",0]
 
 // 2. you should query something magic
 $T->fm([], "ph");
-#=["InvalidArgumentException","no magic fields in query field list",0]
+#=["InvalidArgumentException","no magic fields in queried",0]
 
