@@ -343,7 +343,7 @@ class M_TypeBase {
         $ph=substr($ph,0,-3)."-".substr($ph,-3);
         if ($ph[0]=='-') $ph=substr($ph,1);
         if ($pref=='1')
-            return "$pref-$ph-$post";
+            return "(".substr($ph,0,3).")".substr($ph,4)."-".$post;
         /*
         if ($pref=='86') { // China
             $p = str_replace("-", "", $ph.$post);

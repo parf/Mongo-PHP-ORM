@@ -170,6 +170,15 @@ class M_Collection implements ArrayAccess {
         return $this->fo($query, $fields);
     }
 
+    // find records with specified ids and return array of Objects. 
+    // _id: { $in:[$ids] }
+    function findOIn(array $ids, $fields="") { # array
+        Profiler::in_off("M:findOIn", [$this->sdc, $ids, $fields]);
+        $r = $this->fo(["_id" => ['$in' => $ids]], $fields);
+        Profiler::out();
+        return $r;
+    }
+
     // find records with specified ids
     // _id: { $in:[$ids] }
     function findIn(array $ids, $fields="") { # array
