@@ -39,32 +39,32 @@ count(M::listDatabases())>0;
 $a_no->C("autoload");
 #=""
 ; $c= $a_no->go(1);
-$c->v();
+$c->v(); // reveal internal details
 #={"D":[],"id":1,"loaded":false}
 $c->get("age");
 #={"age":38}
 $c->v();
-#={"D":{"_id":1,"age":38},"id":1,"loaded":false}
+#={"D":{"_id":1,"age":38},"id":1,"loaded":{"age":1}}
 $c->name;
 #="Parf"
-$c->v();
+$c->v(); // all data should be loaded
 #={"D":{"_id":1,"name":"Parf","age":38},"id":1,"loaded":true}
 
 // _id load
 $a_id->C("autoload");
 #="_id"
 ; $c= $a_id(1);
-$c->v();
-#={"D":{"_id":1},"id":1,"loaded":"a"}
+$c->v(); // autoloaded no useful fields, performed check for existance
+#={"D":{"_id":1},"id":1,"loaded":[]}
 $c->id;  // object ID
 #=1
 $c->_id;  // mongo _id
 #=1
 $c->v();
-#={"D":{"_id":1},"id":1,"loaded":"a"}
+#={"D":{"_id":1},"id":1,"loaded":[]}
 $c->name;
 #="Vikki"
-$c->v();
+$c->v(); // all data loaded
 #={"D":{"_id":1,"name":"Vikki","age":0.6},"id":1,"loaded":true}
 
 // specific fields load
@@ -72,19 +72,19 @@ $a_sf->C("autoload");
 #="name age mmm"
 ; $c= $a_sf(1);
 $c->v();
-#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1}}
 $c->name;
 #="Ted"
 $c->v();
-#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1}}
 $c->age;
 #=6
 $c->v();
-#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1}}
 $c->mmm;  # autoloaded but non-exiting field
 #=null
 $c->v();
-#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":"a"}
+#={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1}}
 $c->sex;  # non autloaded field
 #="male"
 $c->v();
@@ -290,13 +290,13 @@ $u->get("zz z");
 #={"z":null,"zz":["y"]}
 #
 $u->v();
-#={"D":{"_id":100,"zz":["y"],"y":[1,1,2,1,3],"x":3,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1},"id":100,"loaded":true}
+#={"D":{"_id":100,"zz":["y"],"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1,"x":3,"y":[1,1,2,1,3]},"id":100,"loaded":{"zz":1,"z":1}}
 
 $u->MC();
 #={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
 
 $u->json();
-#="{\"_id\":100,\"zz\":[\"y\"],\"y\":[1,1,2,1,3],\"x\":3,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1}"
+#="{\"_id\":100,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1,\"x\":3,\"y\":[1,1,2,1,3],\"zz\":[\"y\"]}"
 
 
 # FIELD ALIAS test

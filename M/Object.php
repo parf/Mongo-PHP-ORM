@@ -45,7 +45,9 @@ class M_Object implements ArrayAccess {
     public $id;  // current id == $D["_id"]
 
     protected $MC;  // M_Collection
-    protected $loaded=false;   // false - DATA NOT LOADED
+    protected $loaded=false;    // false - DATA NOT LOADED
+                                // hash("field" => 1) - some fields loaded
+                                // true - all data loaded
     protected $D=[];      // read data cache
 
     static $debug = 0;
@@ -61,16 +63,17 @@ class M_Object implements ArrayAccess {
     }
 
     // instantiate object from already loaded data
-    // D - loaded data hash
-   // no exists checks performed
-    static final function i_d($MC, $D) { # instance
+    // $D - data {field => value}
+    // no exists checks performed
+    // $loaded - {see $this->loaded}
+    static final function i_d($MC, $D, $loaded=false) { # instance
         $id=$D["_id"];
         if (! $id) {
             trigger_error("_id field required");
             die;
         }
         $o = static::i($MC, $id, false);
-        $o->_setD($D);
+        $o->_setD($D, $loaded);
         return $o;
     }
 
@@ -92,29 +95,39 @@ class M_Object implements ArrayAccess {
     // autoload = "field list" - load specific fields
     function autoload($autoload) {
         if ($autoload === true) { // all
-            $this->_load(); // loaded = true
+            $this->_load();       // $this->loaded = true
             return;
         }
-        $this->_load($autoload);
-        $this->loaded = "a"; // autoload fields only (partial)
+        $this->_load($autoload);  // $this->loaded - hash of loaded fields
     }
 
     // load data - will load data only once
     function load($fields="") { #
+        $fields = $this->MC->_fields($fields);
+
         if ($this->loaded === true)
             return;
 
-        if (! $fields && $this->loaded=='a') {
-            $fields = $this->__getAlMap();
-            $this->loaded=true;
-        }
-        // do not load already loaded fields
-        if (! $fields && $this->D) { // loaded = partial
-            $this->loaded=true;
+        // load all - exclude already loaded fields
+        if (! $fields && is_array($this->loaded)) { // already loaded fields
             $fields= [];
-            foreach($this->D as $k => $v)
+            foreach($this->loaded as $k => $v)
                 $fields[$k] = false;
-            unset($fields["_id"]);
+            $this->_load($fields);
+            $this->loaded=true;
+            return;
+        }
+
+        // do not load already loaded fields
+        if ($fields && is_array($this->loaded) && isset($fields[0])) { // already loaded fields
+            Profiler::info("M2:load_of/partial", ["".$this, $fields]);
+            $ftl = $fields; // fields to load
+            foreach($fields as $f)
+                if (! isset($this->loaded[$f]))
+                    $ftl[] = $f;
+            if (! $ftl)
+                return;
+            $fields = $ftl;
         }
 
         $this->_load($fields);
@@ -126,35 +139,40 @@ class M_Object implements ArrayAccess {
         return $this;
     }
 
-    // low level
-    // forced load/reload
-    protected function _load($fields="") {
+    // low level - forced load/reload
+    // avoid unless you want to re-query data from mongo
+    // takes care of loaded fields
+    function _load($fields="") { // {f:v} loaded fields
+        if (! is_array($fields))
+            $fields = $this->MC->_fields($fields);
+        
         if ($fields) {
             Profiler::in_off("M:load/partial", ["".$this, $fields]);
-            $this->D = $this->MC->findOne($this->id, $fields) + $this->D;
+            $D = $this->MC->findOne($this->id, $fields);
+            $this->D = $D + $this->D;
+            $lf = []; // loaded fields
+            if (isset($fields[0])) { // list of fields
+                foreach($fields as $f)
+                    $lf[$f] = 1;
+            } else { // fields => false/true
+                foreach($fields as $f => $v)
+                    $lf[$f] = 1;
+            }
+            unset($lf["_id"]);
+            if (is_array($this->loaded))
+                $this->loaded = $this->loaded + $lf;
+            else
+                $this->loaded = $lf;
         } else {
             Profiler::in_off("M:load", "".$this);
-            $this->D = $this->MC->findOne($this->id);
-
+            $this->D = $D = $this->MC->findOne($this->id);
             $this->loaded = true;
         }
         Profiler::out();
-        if (! $this->D["_id"]) {
+        if (! $D["_id"]) {
             $this->loaded = false;
             throw new NotFoundException("".$this);
         }
-    }
-
-    // forced field get
-    // works with actual fields ONLY !!
-    // avoid using use get instead
-    /* low-level */ function _get($fields="") {
-        Profiler::in_off("M:_get", ["".$this, $fields]);
-        $D = $this->MC->findOne($this->id, $fields);
-        if (! $D["_id"])
-            throw new NotFoundException("".$this);
-        $this->D = $D + $this->D;
-        Profiler::out();
         return $D;
     }
 
@@ -402,7 +420,7 @@ class M_Object implements ArrayAccess {
     }
 
     // access to loaded data
-    // use in getters to avoid recursion
+    // use in getters to avoid recursion, use when sorting
     final function D($field=false) { // loaded field value
         if ($field === false)
             return $this->D;
@@ -419,29 +437,23 @@ class M_Object implements ArrayAccess {
 
 
     // PRECEDENCE:
-    //   FIELD > METHOD > MAGIC_FIELD > ALIAS > HAS-ONE > HAS-MANY
+    //   FIELD > ALIAS > METHOD > MAGIC_FIELD > HAS-ONE > HAS-MANY
     //   Magic fields - fields starting with _
     function __get($key) {
         if ( isset($this->D[$key]) )
             return $this->D[$key];
 
-        // avoid additional queries for non-exitent autoload fields
-        if ($this->loaded=='a') {
-            $af=$this->__getAlMap();
-            if (isset($af[$key]))
-                return null;
-        }
+        // FIELD ALIAS
+        if ( $fa = $this->MC->C("field-alias.$key") )
+            return $this->__get($fa);
 
-        $this->load();
-
-        if ( isset($this->D[$key]) )
-            return $this->D[$key];
-
-        if ( method_exists($this, "get$key") )
-            return call_user_func( [$this, "get$key"] );
+        // non-existent loaded fields
+        if (is_array($this->loaded) && isset($this->loaded[$key]))
+            return null;
 
         // MAGIC FIELDS
         if ( $key[0] == '_' ) {
+            $this->load();
             if ($key == '_')
                 return $this->D;
             if ($key == '__') // magic field representation (when possible)
@@ -454,13 +466,16 @@ class M_Object implements ArrayAccess {
             }
             return $this->MC->formatMagicField($key, $this->D[$key]);
         }
+       
+        //if (is_array($this->loaded))
+        //Profiler::info("loading: ", [$key, $this->loaded]);
 
-        // FIELD ALIAS
-        if ( $fa = $this->MC->C("field-alias.$key") )
-            return $this->__get($fa);
+
 
         // HAS-ONE
         if ($c=$this->MC->C("has-one.$key")) {  # [FK, db.collection]
+            if (! isset($D[$c[0]]))
+                $this->load($c[0]);
             if (! isset($this->D[$c[0]]))
                 return; // null
             $fk=$this->D[$c[0]];
@@ -468,7 +483,9 @@ class M_Object implements ArrayAccess {
         }
 
         // HAS-MANY
-        if ($c=$this->MC->C("has-many.$key")) { # [FK, db.collection.KEY]
+        if ($c=$this->MC->C("has-many.$key")) { // [FK, db.collection.KEY]
+            if (! isset($D[$c[0]]))
+                $this->load($c[0]);
             $fk=$this->D[$c[0]];
             if (! $fk)
                 return null;
@@ -476,23 +493,18 @@ class M_Object implements ArrayAccess {
             return M($db.".".$col)->f( [$key => $fk] );
         }
 
+        $this->load();
+        if ( isset($this->D[$key]) )
+            return $this->D[$key];
+
+        if ( method_exists($this, "get$key") ) 
+            return call_user_func( [$this, "get$key"] );
+
         // return array() for non existant array-type fields
         if ($this->MC->C("field.$key") == 'array')
             return [];
 
         return null;
-    }
-
-    private function __getAlMap() { # al_field => -1
-        $af=$this->MC->C("autoload-f");
-        if (is_array($af))
-            return $af;
-        $af = [];
-        foreach(explode(" ", $this->MC->C("autoload")) as $f)
-            $af[$f]=false;
-        unset($af["_id"]);
-        $this->MC->C_set("autoload-f", $af);
-        return $af;
     }
 
     // PRECEDENCE:
@@ -520,9 +532,10 @@ class M_Object implements ArrayAccess {
 
 
     // INTERNAL: calling this will void your warranty!!
-    // replace cached object data
-    /* internal */ final function _setD(array $D) {
-        $this->D=$D;
+    // replace cached data
+    /* internal */ final function _setD(array $D, $loaded=false) {
+        $this->D = $D;
+        $this->loaded = $loaded;
     }
 
     // used for class debug

@@ -1,0 +1,1 @@
+find . -name "*.test" -perm +111 | spartan-test --

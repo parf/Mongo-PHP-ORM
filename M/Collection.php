@@ -149,20 +149,27 @@ class M_Collection implements ArrayAccess {
     }
 
     // find wrapper - return array of {_id => M_Object}
-    function fo($query, $fields="") { # [M_Object, ...]
+    function fo($query, $fields="", $how="f") { # [M_Object, ...]
         $r = [];
-        foreach ($this->find($query, $fields) as $e)
-            $r[$e["_id"]]=$this->go_d($e);
+        $fields = $this->_fields($fields);
+
+        $qf = []; // queried fields
+        if (isset($fields[0])) {
+            foreach($fields as $f)
+                $qf[$f]=1;
+        }
+        if (! $fields)
+            $qf=true;  // all fields loaded
+
+        foreach ($this->$how($query, $fields) as $e)
+            $r[$e["_id"]]=$this->go_d($e, $qf);
         return $r;
     }
 
     // Safe find Objects
     // find wrapper - return array of M_Object
     function sfo($query, $fields="") { # [M_Object, ...]
-        $r = [];
-        foreach ($this->sf($query, $fields) as $e)
-            $r[$e["_id"]]=$this->go_d($e);
-        return $r;
+        return $this->fo($query, $fields, "sf");
     } 
 
     // alias of fo - findObjects
@@ -612,9 +619,10 @@ class M_Collection implements ArrayAccess {
     }
 
     // instantiate M_Object from loaded data
-    function go_d(array $data) { # M_Object
+    // see M_Object::i_d for details
+    function go_d(array $data, $loaded_fields=false) { # M_Object
         $class = $this->_class();
-        return $class::i_d($this, $data);
+        return $class::i_d($this, $data, $loaded_fields);
     }
 
     // clean up cache, disable M_Object caching
