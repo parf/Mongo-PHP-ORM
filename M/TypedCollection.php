@@ -179,13 +179,19 @@ final class M_TypedCollection extends M_Collection {
         return parent::update($query, $newobj, $options);
     }
 
-    function insert(array $data, array $options=[]) { # ID
-        parent::insert( $this->applyTypes($data) );
+    function insert(array $data, array $options=[]) { // ID
+        if (! isset($data["_id"]))
+            $data["_id"]=self::next();
+        if ($fa = $this->C("field-alias"))
+            $data = $this->_kv_aliases($fa, $data);
+        $data = $this->applyTypes($data);
+        $this->MC->insert($data, $options);
+        return $data["_id"];
     }
 
     // insert that honors "node.field" notation
-    function dotInsert(array $data, array $options=[]) { # ID
-        parent::dotInsert( $this->applyTypes($data) );
+    function dotInsert(array $data, array $options=[]) { // ID
+        return parent::dotInsert( $this->applyTypes($data) );
     }
 
     // smart addToSet

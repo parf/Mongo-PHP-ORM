@@ -1,0 +1,85 @@
+#!/bin/env spartan-test
+<?
+require_once "init.php";
+#=true
+
+// Stricts Fiels
+// you can read/wrote only defined fields
+// this is reccommended way
+
+; $C = M("test.strict");
+
+// Config
+// M::C("", "test.strict");
+
+// FIELDS
+$C->C("field");
+#={"age":"int","map":["one","two","three"],"n":"string","p":"phone"}
+
+$C->C("field-alias");
+#={"name":"n","phone":"p"}
+
+// add class: M_StrictField to activate
+$C->C("class");
+#="M_StrictField"
+
+; $C->reset(); // remove all, reset sequence
+
+// stricts fields is not supported for inserts (yet)
+// aliases are supported
+$C->insert(["age" => 10, "map" => "one", "name" => "test", "x" => 1]);
+#=1
+
+// types checks are supported
+$C->insert(["age" => 1, "map" => "xxx"]);
+#=["InvalidArgumentException","bad enum key: xxx type: [ENUM]",0]
+
+// types are supported
+$C->insert(["age" => 10, "p" => 6173720000]);
+#=3
+
+// aliases + types
+$C->insert(["age" => 10, "phone" => "+74957264600"]);
+#=4
+
+$C->f([]);
+#={"1":{"_id":1,"age":10,"map":0,"n":"test","x":1},"3":{"_id":3,"age":10,"p":16173720000},"4":{"_id":4,"age":10,"p":74957264600}}
+
+
+$C(1)->unknown_field;
+#=["DomainException","unknown field unknown_field",0]
+
+// alias an strict fields
+$C(1)->name;
+#="test"
+
+// magic
+$C(3)->_p;
+#="(617)372-0000"
+
+// alias
+$C(3)->phone;
+#=16173720000
+
+// magic of an alias
+$C(3)->_phone;
+#="(617)372-0000"
+
+$C(4)->_phone;
+#="+7 495-726-4600"
+
+// unknown field assignment
+$C(4)->unknown_field = "ops";
+#=["DomainException","unknown field unknown_field",0]
+
+$C(4)->inc("test");
+#=["DomainException","unknown field test",0]
+
+
+// get all alias
+$C(4)->_;
+#={"_id":4,"age":10,"p":74957264600}
+
+// get all*magic alias
+$C(4)->__;
+#={"_id":"4","age":"10","p":"+7 495-726-4600"}

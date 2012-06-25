@@ -284,7 +284,7 @@ class M_TypeBase {
         case 7: return substr($ph,0,3)."-".substr($ph,3);
         case 8:
         case 9: return substr($ph,0,-4)."-".substr($ph,-4);
-        case 10: return substr($ph,0,3)."-".phone_format(substr($ph,3));
+            // case 10: return substr($ph,0,3)."-".self::phone_format(substr($ph,3));
         }
         return self::_international_phone_format($ph);
     }

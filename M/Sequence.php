@@ -80,14 +80,11 @@ class M_Sequence {
      * @param int $val
      */
     static function reset($name, $val=false) { # null
-        if (!self::last($name)) {
-            trigger_error("SEQUENCE: no such sequence: $name", E_USER_ERROR);
-            die;
-        }
-
+        if (self::last($name) === null)
+            return self::create($name, $val);
         if ($val===false)
             $val=self::lastDb($name);
-
+        
         self::MC($name)->update(
                                ["_id" => (string) $name],
                                ['$set' => ["val" => (int)$val]],
@@ -106,7 +103,7 @@ class M_Sequence {
         if ($val === false)
             $val=self::lastDb($name)+1;
         self::MC($name)->insert(["_id" => $name, "val" => (int)$val-1],
-                               ["safe" => true, "fsync" => true]);
+                                ["safe" => true, "fsync" => true]);
         #return M()->getLastError();
     }
 

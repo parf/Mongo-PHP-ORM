@@ -95,6 +95,20 @@ m2:
         text: text   # html escaping, cross-site scripting 
         str: string
         name: name
+
+    # strict fields
+    # you can use only defined fields
+    strict:
+      class: M_StrictField
+      field-alias:
+        name:n
+        phone:p
+      field:
+        n:string
+        map: ["one", "two", "three"]
+        age:int        
+        p:phone
+
 # alternative server connection
 m2-server2:
   connect: mongo2

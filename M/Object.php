@@ -112,7 +112,8 @@ class M_Object implements ArrayAccess {
         if (! $fields && is_array($this->loaded)) { // already loaded fields
             $fields= [];
             foreach($this->loaded as $k => $v)
-                $fields[$k] = false;
+                if ($k!='_id')
+                    $fields[$k] = false;
             $this->_load($fields);
             $this->loaded=true;
             return;
@@ -170,7 +171,7 @@ class M_Object implements ArrayAccess {
             $this->loaded = true;
         }
         Profiler::out();
-        if (! $D["_id"]) {
+        if (! isset($D["_id"])) {
             $this->loaded = false;
             throw new NotFoundException("".$this);
         }
@@ -458,7 +459,7 @@ class M_Object implements ArrayAccess {
             if ( $fa = $this->MC->C("field-alias.$key") )
                 $key = $fa;
             if (! isset($D[$key]))
-                $this->load($key);
+                $this->load();
             if (is_array($this->loaded) && isset($this->loaded[$key]))
                 return null;
             if (! $key)
@@ -475,8 +476,6 @@ class M_Object implements ArrayAccess {
 
         //if (is_array($this->loaded))
         //Profiler::info("loading: ", [$key, $this->loaded]);
-
-
 
         // HAS-ONE
         if ($c=$this->MC->C("has-one.$key")) {  # [FK, db.collection]
@@ -499,7 +498,7 @@ class M_Object implements ArrayAccess {
             return M($db.".".$col)->f( [$key => $fk] );
         }
 
-        $this->load($key);
+        $this->load();
         if ( isset($this->D[$key]) )
             return $this->D[$key];
 
@@ -612,7 +611,11 @@ class M_Object implements ArrayAccess {
   * read only defined fields/aliases, calc fields, magic_fields of defined fields/aliases
   * write to defined fields/aliases, calc fields, magic_fields of defined fields/aliases
 
-  throws DomainException when trying to read/write undefined fields
+  throws DomainException when trying to read/write unknown fields
+
+  TODO:
+    -- does not support inserts
+    -- does not support operations (see $op)
 
 */
 class M_StrictField extends M_Object {
@@ -624,7 +627,8 @@ class M_StrictField extends M_Object {
         if ( $fa = $MC->C("field-alias.$field") )
             $field = $fa;
 
-        if ( $MC->C("field-alias.$field") )
+        // do we know this field?
+        if ( $MC->C("field.$field") )
             return parent::__get($field);
 
         // calc field
@@ -634,7 +638,9 @@ class M_StrictField extends M_Object {
         // magic field - requiring to have underlying field
         if ($field['0']=='_') {
             $f = substr($field, 1);
-            if ($f && !$MC->C("field.$f")) {
+            if (! $f || $f=='_')
+                return parent::__get($field);
+            if (!$MC->C("field.$f")) {
                 // alias of magic field
                 if (! $MC->C("field-alias.$f") )
                     throw new DomainException("unknown field $field($f)");
@@ -660,6 +666,19 @@ class M_StrictField extends M_Object {
         }
         parent::set($a);
         return $this;
+    }
+
+
+    // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
+    // physical fields only, no aliases
+    protected function op($op, array $r) {
+        if (isset($r[0]))
+            $r=[$r[0] => $r[1]];
+        $T=$this->MC->C("field");
+        foreach($r as $f => $v)
+            if (! isset($T[$f]))
+                throw new DomainException("unknown field $f");
+        return parent::op($op, $r);
     }
 
 }
