@@ -120,14 +120,14 @@ class M_Object implements ArrayAccess {
 
         // do not load already loaded fields
         if ($fields && is_array($this->loaded) && isset($fields[0])) { // already loaded fields
-            Profiler::info("M2:load_of/partial", ["".$this, $fields]);
-            $ftl = $fields; // fields to load
+            $ftl = []; // fields to load
             foreach($fields as $f)
                 if (! isset($this->loaded[$f]))
                     $ftl[] = $f;
             if (! $ftl)
                 return;
             $fields = $ftl;
+            Profiler::info("M2:load_of/partial", ["".$this, $fields]);
         }
 
         $this->_load($fields);
@@ -145,7 +145,7 @@ class M_Object implements ArrayAccess {
     function _load($fields="") { // {f:v} loaded fields
         if (! is_array($fields))
             $fields = $this->MC->_fields($fields);
-        
+
         if ($fields) {
             Profiler::in_off("M:load/partial", ["".$this, $fields]);
             $D = $this->MC->findOne($this->id, $fields);
@@ -158,7 +158,8 @@ class M_Object implements ArrayAccess {
                 foreach($fields as $f => $v)
                     $lf[$f] = 1;
             }
-            unset($lf["_id"]);
+            // unset($lf["_id"]);
+            $lf["_id"]=1;
             if (is_array($this->loaded))
                 $this->loaded = $this->loaded + $lf;
             else
@@ -453,12 +454,17 @@ class M_Object implements ArrayAccess {
 
         // MAGIC FIELDS
         if ( $key[0] == '_' ) {
-            $this->load();
-            if ($key == '_')
-                return $this->D;
-            if ($key == '__') // magic field representation (when possible)
-                return $this->MC->allMagic($this->D); // typed collection expected
             $key = substr($key, 1);
+            if ( $fa = $this->MC->C("field-alias.$key") )
+                $key = $fa;
+            if (! isset($D[$key]))
+                $this->load($key);
+            if (is_array($this->loaded) && isset($this->loaded[$key]))
+                return null;
+            if (! $key)
+                return $this->D;
+            if ($key == '_') // magic field representation (when possible)
+                return $this->MC->allMagic($this->D); // typed collection expected
             if (! isset($this->D[$key])) {
                 if ( $fa = $this->MC->C("field-alias.$key") )
                     return $this->__get("_".$fa);
@@ -466,7 +472,7 @@ class M_Object implements ArrayAccess {
             }
             return $this->MC->formatMagicField($key, $this->D[$key]);
         }
-       
+
         //if (is_array($this->loaded))
         //Profiler::info("loading: ", [$key, $this->loaded]);
 
@@ -493,11 +499,11 @@ class M_Object implements ArrayAccess {
             return M($db.".".$col)->f( [$key => $fk] );
         }
 
-        $this->load();
+        $this->load($key);
         if ( isset($this->D[$key]) )
             return $this->D[$key];
 
-        if ( method_exists($this, "get$key") ) 
+        if ( method_exists($this, "get$key") )
             return call_user_func( [$this, "get$key"] );
 
         // return array() for non existant array-type fields
@@ -536,6 +542,8 @@ class M_Object implements ArrayAccess {
     /* internal */ final function _setD(array $D, $loaded=false) {
         $this->D = $D;
         $this->loaded = $loaded;
+        if (is_array($loaded))
+            $this->loaded["_id"]=1;
     }
 
     // used for class debug
@@ -601,8 +609,8 @@ class M_Object implements ArrayAccess {
   extend this class of you want to get errors when you access unknown fields
 
   controls ORM style access and saves:
-  * read any existing fields, field aliases, calc fields
-  * write to field aliases, calc fields and only defined fields
+  * read only defined fields/aliases, calc fields, magic_fields of defined fields/aliases
+  * write to defined fields/aliases, calc fields, magic_fields of defined fields/aliases
 
   throws DomainException when trying to read/write undefined fields
 
@@ -610,10 +618,34 @@ class M_Object implements ArrayAccess {
 class M_StrictField extends M_Object {
 
     function __get($field) {
-        $v = parent::__get($field);
-        if ($v === null && $this->MC->C("field.$key"))
-            throw new DomainException("unknown field $field");
-        return $v;
+        $MC = $this->MC;
+
+        // check field, alias, magic, function
+        if ( $fa = $MC->C("field-alias.$field") )
+            $field = $fa;
+
+        if ( $MC->C("field-alias.$field") )
+            return parent::__get($field);
+
+        // calc field
+        if ( method_exists($this, "get$field") )
+            return call_user_func( [$this, "get$field"] );
+
+        // magic field - requiring to have underlying field
+        if ($field['0']=='_') {
+            $f = substr($field, 1);
+            if ($f && !$MC->C("field.$f")) {
+                // alias of magic field
+                if (! $MC->C("field-alias.$f") )
+                    throw new DomainException("unknown field $field($f)");
+            }
+            return parent::__get($field);
+        }
+
+        if ($MC->C("has-one.$field") || $MC->C("has-many.$field"))
+            return parent::__get($field);
+
+        throw new DomainException("unknown field $field");
     }
 
     /* low-level */ function set() {  // this
@@ -623,7 +655,7 @@ class M_StrictField extends M_Object {
         else
             $a=$a[0];
         foreach($a as $field => $value) {
-            if ($this->MC->C("field.$key"))
+            if (!$this->MC->C("field.$field"))
                 throw new DomainException("unknown field $field");
         }
         parent::set($a);
