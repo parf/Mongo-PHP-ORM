@@ -643,7 +643,7 @@ class M_StrictField extends M_Object {
             if (!$MC->C("field.$f")) {
                 // alias of magic field
                 if (! $MC->C("field-alias.$f") )
-                    throw new DomainException("unknown field $field($f)");
+                    throw new DomainException("Mongo_StrictField::get unknown magic field ".$this.".$field");
             }
             return parent::__get($field);
         }
@@ -651,7 +651,7 @@ class M_StrictField extends M_Object {
         if ($MC->C("has-one.$field") || $MC->C("has-many.$field"))
             return parent::__get($field);
 
-        throw new DomainException("unknown field $field");
+        throw new DomainException("Mongo_StrictField::get unknown field ".$this.".$field");
     }
 
     /* low-level */ function set() {  // this
@@ -662,7 +662,7 @@ class M_StrictField extends M_Object {
             $a=$a[0];
         foreach($a as $field => $value) {
             if (!$this->MC->C("field.$field"))
-                throw new DomainException("unknown field $field");
+                throw new DomainException("Mongo_StrictField::set unknown field ".$this.".$field");
         }
         parent::set($a);
         return $this;
