@@ -13,8 +13,9 @@ class M_Helper {
     // by default lists only unknown fields
     static function fields($collection, $hide_known_fields=true, $lv2=true) {
         $field=array();
-        $ci=M($collection)->find( array() ); // iterate over everthing
-        $known=M($collection)->config("field-type");
+        $MC = M($collection);
+        $ci=$MC->find( array() ); // iterate over everthing
+        $known=$MC->C("field");
         foreach($ci as $row) {
             foreach($row as $f => $v) {
                 if (is_numeric($f))
@@ -60,9 +61,21 @@ class M_Helper {
         }
     }
 
+
     // remove fields from collection
     // fields = space delimited field lists
     static function unsetFields(/*string*/ $collection, /*string*/ $fields) {
+        $F=array_flip(M::qw($fields)); // field => isset
+        foreach ($F as $k => &$v) $v = 1;
+        $C=M($collection);
+        $C->update([], ['$unset'=>$F], ['multiple'=>true, 'upsert' => false]);
+
+    }
+/*
+    version prior 26 Jun 2012 privided by Parf.
+    // remove fields from collection
+    // fields = space delimited field lists
+    static function unsetFields($collection, $fields) {
         $F=array_flip(M::qw($fields)); // field => isset
         $C=M($collection);
         $ci=$C->find( array() ); // iterate over everthing
@@ -83,7 +96,7 @@ class M_Helper {
         }
 
     }
-
+*/
 
     // Migrate MYSQL table to Mongo
     //
