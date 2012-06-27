@@ -698,7 +698,7 @@ class M_Collection implements ArrayAccess {
     //   update ops (set, inc, addToSet, ...)
     // is not used in generic update
 
-    protected function _kv_aliases($fa, array $q) {
+    function _kv_aliases($fa, array $q) {
         $f = 0; // alias found flag
         foreach ($q as $f => $v)
             if (isset($fa[$f])) {

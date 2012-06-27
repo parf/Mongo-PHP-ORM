@@ -227,19 +227,13 @@ class M_Object implements ArrayAccess {
             trigger_error("not enough params");
             die;
         }
-        if (! array_key_exists(1, $r)) {
-            foreach($r[0] as $k => $v)
-                $this->reset($k);
-            return $this->MC->update($this->id, [$op => $r[0]]);
-        }
-        if (is_array($r[0])) {
-            trigger_error("can't mix KV-Array and 'key, value' syntax");
-            die;
-        }
-        $this->reset($r[0]);
-        Profiler::in_off("M:$op", ["".$this, $r]);
-        $this->MC->update($this->id, [$op => [$r[0] => $r[1]]]);
-        Profiler::out();
+        if (array_key_exists(1, $r))
+            $r = [ [$r[0] => $r[1]] ];
+        if ($fa = $this->MC->C("field-alias"))
+            $r[0] = $this->MC->_kv_aliases($fa, $r[0]);
+        foreach($r[0] as $k => $v)
+            $this->reset($k);
+        $this->MC->update($this->id, [$op => $r[0]]);
         return $this;
     }
 
@@ -631,6 +625,10 @@ class M_StrictField extends M_Object {
         if ( $MC->C("field.$field") )
             return parent::__get($field);
 
+        // do we know this field? (as array)
+        if ( $MC->C("field.$field.*") )
+            return parent::__get($field);
+
         // calc field
         if ( method_exists($this, "get$field") )
             return call_user_func( [$this, "get$field"] );
@@ -660,9 +658,35 @@ class M_StrictField extends M_Object {
             $a=[$a[0] => $a[1]];
         else
             $a=$a[0];
+        $rename = [];
         foreach($a as $field => $value) {
-            if (!$this->MC->C("field.$field"))
+            if ( $fa = $this->MC->C("field-alias.$field") ) {
+                $rename[$field] = $fa;
+                $field = $fa;
+            }
+            if (!$this->MC->C("field.$field")) {
+                if ($T = $this->MC->C("field.$field.*")) {
+                    if (! is_array($value))
+                        throw new DomainException("Mongo_StrictField::set array expected for ".$this.".$field");
+                    continue;
+                }
+                if (strpos($field, ".")) {
+                    $f = explode(".", $field);
+                    if (count($f)==2 && is_numeric($f[sizeof($f)-1])) {  // field.42 == array access
+                        if ($T = $this->MC->C("field.$f[0].*")) {
+                            $a[$field] = M_Type::apply($value, $T);
+                            continue;
+                        }
+                    }
+                }
                 throw new DomainException("Mongo_StrictField::set unknown field ".$this.".$field");
+            }
+        }
+        if ($rename) {
+            foreach($rename as $from => $to) {
+                $a[$to]=$a[$from];
+                unset($a[$from]);
+            }
         }
         parent::set($a);
         return $this;
@@ -670,16 +694,19 @@ class M_StrictField extends M_Object {
 
 
     // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
-    // physical fields only, no aliases
     protected function op($op, array $r) {
         if (isset($r[0]))
-            $r=[$r[0] => $r[1]];
+            $r=[[$r[0] => $r[1]]];
         $T=$this->MC->C("field");
-        foreach($r as $f => $v)
+        foreach($r[0] as $f => $v) {
+            if ( $fa = $this->MC->C("field-alias.$f") )
+                $f = $fa;
             if (! isset($T[$f]))
                 throw new DomainException("unknown field $f");
+        }
         return parent::op($op, $r);
     }
+
 
 }
 
