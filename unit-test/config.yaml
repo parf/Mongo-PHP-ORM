@@ -103,11 +103,15 @@ m2:
       field-alias:
         name:n
         phone:p
+        fax:f
+        cell:c
       field:
         n:string
         map: ["one", "two", "three"]
         age:int        
         p:phone
+        f.*:phone
+        c.*:phone
 
 # alternative server connection
 m2-server2:

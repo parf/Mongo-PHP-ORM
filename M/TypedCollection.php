@@ -33,6 +33,8 @@ final class M_TypedCollection extends M_Collection {
         foreach($fields as & $f) {
             if ($f[0]!='_')
                 continue;
+            if ($f=='_id')
+                continue;
             $f = substr($f, 1);
             $mf[$f] = $this->type[$f];
         }

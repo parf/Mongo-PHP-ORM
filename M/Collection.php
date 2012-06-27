@@ -119,8 +119,11 @@ class M_Collection implements ArrayAccess {
     }
 
     // find wrapper - returns array instead of MongoCollection
-    function f($query, $fields="") { # Array
-        return iterator_to_array( $this->find($query, $fields) );
+    function f($query, $fields="") { // Array
+        Profiler::in_off("M::f", ["".$this, $query, $fields]);
+        $r = iterator_to_array( $this->find($query, $fields) );
+        Profiler::out();
+        return $r;
     }
 
     // Safe Find
@@ -483,7 +486,7 @@ class M_Collection implements ArrayAccess {
     //    :sort - hash or "space delimited field list" (if field starts with "-" - sort descending)
     // SPECIAL query field: ":pager" - pointer to Pager class instance.
     // IMPORTANT. $pager->page_size has priority over :limit as well as $pager->start has priority over :skip-
-    function find($query, $fields="") { # MongoCursor
+    function find($query=[], $fields="") { # MongoCursor
         Profiler::in("M2::find", [$this->sdc, $query, $fields]);
         $query  = $this->_query($query);
         $fields = $this->_fields($fields);
@@ -500,7 +503,6 @@ class M_Collection implements ArrayAccess {
         }
 
         $mc=$this->MC->find($query, $fields); // MongoCursor
-        Profiler::out();
         
         if ($sort) {
             if (! is_array($sort)) { # space delimited fields. if field starts with "-" - sort desc
@@ -522,6 +524,8 @@ class M_Collection implements ArrayAccess {
             $mc = $mc->skip($skip);
         if ($limit)
             $mc = $mc->limit($limit);
+
+        Profiler::out();
         return $mc;
     }
 
@@ -693,6 +697,7 @@ class M_Collection implements ArrayAccess {
     //   insert
     //   update ops (set, inc, addToSet, ...)
     // is not used in generic update
+
     protected function _kv_aliases($fa, array $q) {
         $f = 0; // alias found flag
         foreach ($q as $f => $v)
@@ -709,7 +714,7 @@ class M_Collection implements ArrayAccess {
                 else 
                     $q2[$f] = $v;
         return $q2;
-    }
+    }    
 
     // fields - space delimited string, array of fields, array of key => (1 | -1)
     // aliases are supported only in string representation

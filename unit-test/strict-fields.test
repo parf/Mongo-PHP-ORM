@@ -1,7 +1,7 @@
 #!/bin/env spartan-test
 <?
-require_once "init.php";
-#=true
+//require_once "init.php";
+//#=true
 
 // Stricts Fiels
 // you can read/wrote only defined fields
@@ -14,16 +14,17 @@ require_once "init.php";
 
 // FIELDS
 $C->C("field");
-#={"age":"int","map":["one","two","three"],"n":"string","p":"phone"}
+#={"age":"int","c.*":"phone","f.*":"phone","map":["one","two","three"],"n":"string","p":"phone"}
 
 $C->C("field-alias");
-#={"name":"n","phone":"p"}
+#={"cell":"c","fax":"f","name":"n","phone":"p"}
 
 // add class: M_StrictField to activate
 $C->C("class");
 #="M_StrictField"
 
 ; $C->reset(); // remove all, reset sequence
+
 
 // stricts fields is not supported for inserts (yet)
 // aliases are supported
@@ -45,12 +46,47 @@ $C->insert(["age" => 10, "phone" => "+74957264600"]);
 $C->f([]);
 #={"1":{"_id":1,"age":10,"map":0,"n":"test","x":1},"3":{"_id":3,"age":10,"p":16173720000},"4":{"_id":4,"age":10,"p":74957264600}}
 
+; $c= $C(1);
 
-$C(1)->unknown_field;
-#=["DomainException","unknown field unknown_field",0]
+$c->unknown_field;
+#=["DomainException","Mongo_StrictField::get unknown field test.strict[1].unknown_field",0]
 
-// alias an strict fields
-$C(1)->name;
+//array of typed elements (via alias)
+$c->cell = ['(214) 222 2222'];
+#=["(214) 222 2222"]
+
+// alias access (array of case)
+$c->cell;
+#=["(214) 222 2222"]
+
+$c->c = ['(214) 222 2222'];
+#=["(214) 222 2222"]
+
+// magic alias
+$c->_cell;
+#=["+214 222-2222"]
+
+// Avoid using this kind of access - use add, push, pull
+$c["c.0"] = '(214) 333 4455';
+#="(214) 333 4455"
+
+$c->c;
+#=[12143334455]
+
+// This is a right way to work with array fields
+; $c->add("f", "617 345 4444");
+
+$c['f.1'] = '222.335-4755';
+#="222.335-4755"
+
+$c->fax;
+#=[16173454444,12223354755]
+
+$c->_fax;
+#=["(617)345-4444","(222)335-4755"]
+
+// field alias
+$c->name;
 #="test"
 
 // magic
@@ -70,7 +106,7 @@ $C(4)->_phone;
 
 // unknown field assignment
 $C(4)->unknown_field = "ops";
-#=["DomainException","unknown field unknown_field",0]
+#=["DomainException","Mongo_StrictField::set unknown field test.strict[4].unknown_field",0]
 
 $C(4)->inc("test");
 #=["DomainException","unknown field test",0]
