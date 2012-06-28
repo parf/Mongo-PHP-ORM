@@ -25,7 +25,7 @@ use M("db.col") or M("Alias") or M::Alias to instantiate
     M::Alias()->findOne($id) instead of M::Alias()->findOne( ["_id" => (int) $id] )
     note: scalar ids will be converted to int.
 
-  * Above example can be simplified even more as: 
+  * Above example can be simplified even more as:
     (load autoloaded fields, load all if no autoload fields defined)
     M::Alias()[$id]
 
@@ -85,7 +85,7 @@ class M_Collection implements ArrayAccess {
             list($server, $name) = explode(":", $sdc, 2);
         else
             list($server, $name) = ["", $sdc];
-        
+
         if ($f = M::C($server, $name.".field"))
             return  new M_TypedCollection($server, $name, $f);
 
@@ -170,14 +170,14 @@ class M_Collection implements ArrayAccess {
     // find wrapper - return array of M_Object
     function sfo($query, $fields="") { # [M_Object, ...]
         return $this->fo($query, $fields, "sf");
-    } 
+    }
 
     // alias of fo - findObjects
     function findO($query, $fields="") { # [M_Object, ...]
         return $this->fo($query, $fields);
     }
 
-    // find records with specified ids and return array of Objects. 
+    // find records with specified ids and return array of Objects.
     // _id: { $in:[$ids] }
     function findOIn(array $ids, $fields="") { # array
         Profiler::in_off("M:findOIn", [$this->sdc, $ids, $fields]);
@@ -501,7 +501,7 @@ class M_Collection implements ArrayAccess {
 
         $mc=$this->MC->find($query, $fields); // MongoCursor
         Profiler::out();
-        
+
         if ($sort) {
             if (! is_array($sort)) { # space delimited fields. if field starts with "-" - sort desc
                 $_sort=array();
@@ -577,7 +577,7 @@ class M_Collection implements ArrayAccess {
         Profiler::out();
         return $r;
     }
-    
+
     // remove all data, keep indexes, reset sequences
     function reset() {
         $this->remove([]);
@@ -685,54 +685,18 @@ class M_Collection implements ArrayAccess {
         return $q;
     }
 
-    // support for aliases in {KEY => QUERY} data
-    // 
-    // fa - field => alias, q - query as {K => V}
-    // used for:
-    //   finders
-    //   insert
-    //   update ops (set, inc, addToSet, ...)
-    // is not used in generic update
-    protected function _kv_aliases($fa, array $q) {
-        $f = 0; // alias found flag
-        foreach ($q as $f => $v)
-            if (isset($fa[$f])) {
-                $f=1;
-                break;
-            }
-        if (! $f) // no aliases found
-            return $q;
-        $q2 = [];
-        foreach ($q as $f => $v)
-            if (isset($fa[$f]))
-                $q2[$fa[$f]] = $v;
-                else 
-                    $q2[$f] = $v;
-        return $q2;
+    /* internal */ function _kv_aliases(array $kv) { // $kv
+        return $kv;
     }
 
     // fields - space delimited string, array of fields, array of key => (1 | -1)
-    // aliases are supported only in string representation
-    function _fields($fields) { # fields as array
+    // aliases are supported
+    function _fields($fields) { // fields as array
         if (! $fields)
             return [];
-        if (is_array($fields))
-            return $fields;
-        $f = explode(" ", $fields);
-        if ($fa = $this->C("field-alias"))
-            return $this->_fields_aliases($fa, $f);
-        return $f;
-    }
-
-    // support for aliases in query
-    // fa - field => alias
-    // q  - query - list of fields
-    protected function _fields_aliases($fa, array $q) {
-        foreach ($q as &$f) {
-            if (isset($fa[$f]))
-                $f = $fa[$f];
-        }
-        return $q;
+        if (! is_array($fields))
+            $fields = explode(" ", $fields);
+        return $fields;
     }
 
     function applyTypes(array $kv) {

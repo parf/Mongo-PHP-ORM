@@ -263,6 +263,78 @@ final class M_TypedCollection extends M_Collection {
         return $kv;
     }
 
+    // -------------------------------------------------------------------------------------
+    // 2.1 =================================================================================
+
+    // support for aliases in {KEY => QUERY} data
+    // magic field aliases are supported as well
+    //
+    // used for:
+    //   finders
+    //   insert
+    //   update ops (set, inc, addToSet, ...)
+    //
+    // not used in generic update ??? why???
+    /* internal */ function _kv_aliases(array $kv) { // $kv
+        $T = $this->type;
+        $f = 0; // alias found flag
+        $rename = [];
+        foreach ($kv as $f => $v) {
+            if (is_array($T[$f]) && $T[$f][0]=='alias') {
+                $rename[$f] = $T[$f][1];
+                continue;
+            }
+            if ($f[0]=='_') { // magic alias
+                $f2 = substr($f, 1);
+                $t=@$T[$f2];
+                if (! $t)
+                    throw new DomainException("type required for magic field ".$this.".$f2");
+                if (is_array($t) && $t[0]=='alias')
+                    $rename[$f] = "_".$t[1];
+            }
+        }
+        if (! $rename)
+            return $kv;
+        foreach ($rename as $from => $to) {
+            $kv[$to] = $kv[$from];
+            unset($kv[$from]);
+        }
+        return $kv;
+    }
+
+
+    // fields - space delimited string, array of fields, array of key => (1 | -1)
+    // convert to array, process aliases
+    function _fields($fields) { // fields as array
+        if (! $fields)
+            return [];
+        if (! is_array($fields))
+            $fields = explode(" ", $fields);
+        $T = $this->type;
+        if (! $T)
+            return $fields;
+        if (isset($fields[0])) { // list of fields
+            $r=[];
+            foreach($fields as $f) {
+                if (isset($T[$f]) && ($t = $T[$f]) && is_array($t) && $t[0]=='alias')
+                    $r[]=$t[1];
+                else
+                    $r[] = $f;
+            }
+            return $r;
+        }
+        // field => 1,0 case
+        $r=[];
+        foreach($fields as $f => $v) {
+            if (isset($T[$f]) && ($t = $T[$f]) && is_array($t) && $t[0]=='alias')
+                $r[$t[1]] = $v;
+            else
+                $r[$f] = $v;
+        }
+        return $r;
+    }
+
+
 
 
 }

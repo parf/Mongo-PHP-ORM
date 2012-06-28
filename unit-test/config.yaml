@@ -17,7 +17,6 @@ m2:
 
   # Form 1: DB => collections
   db:
-     
      collection:
          # collection config
          config: value 
@@ -26,7 +25,7 @@ m2:
   db.collection:
          # collection config
          config: value
- 
+
   # test database
   test:
 
@@ -34,21 +33,19 @@ m2:
     # untyped collection
     base:
       parf: custom-param
-      field-alias:
-        name_alias: name
-        name-alias: name
+      field:
+        name_alias: ["alias", "name"]
+        name-alias: ["alias", "name"]
 
     # collection: test.something
     something:
        class: M_Something
-       # relations
-       has-one:
-         RelationField: ["key", "db.collection"]
-         Manager: ["m_id", "test.something"]
-         Base: ["base_id", "test.base"]
-       has-many:
-         RelationField: ["key", "db.collection.key"]
-         Subordinates: ["_id", "test.something.m_id"]
+       field:
+         RelationField: ["has-one", "key", "db.collection"]
+         Manager:       ["has-one", "m_id", "test.something"]
+         Base:          ["has-one", "base_id", "test.base"]
+         RelationField: ["has-many", "key", "db.collection.key"]
+         Subordinates:  ["has-many", "_id", "test.something.m_id"]
 
     no_autoload:
       # "" means no fields
@@ -63,51 +60,51 @@ m2:
       autoload: "name age mmm"
 
     typed:
-      field-alias:
-        big_fat_int:int
-        array_of_ip:aip
       field:
-        int:int
-        arr:array
-        t.s:string
-        t.i:int
-        t.a:array
-        t.f:float
-        t.b:bool
-        t.d:date
-        t.ip:ip
-        ai.*:int
-        as.*:string
-        aip.*:ip
-        aip.2:ip
-        en: ["name", "age", "sex"]
+        big_fat_int: ["alias", "int"]
+        array_of_ip: ["alias", "aip"]
+        int:         int
+        arr:         array
+        t.s:         string
+        t.i:         int
+        t.a:         array
+        t.f:         float
+        t.b:         bool
+        t.d:         date
+        t.ip:        ip
+        ai:          ["array", "int"]
+        as:          ["array", "string"]
+        aip:         ["array", "ip"]
+        aip.2:       ip
+        en:          ["enum", "name", "age", "sex"]
         map:
+            0: enum
             y: yksi
             ka: kaksi
             ko: kolme
-        date: date
-        datetime: DateTime
-        ph: phone
-        ip: ip
-        usd: price
-        dt: datetime
-        u: url     # url verification and prefixing
-        text: text   # html escaping, cross-site scripting 
-        str: string
-        name: name
+        date:        date
+        datetime:    DateTime
+        ph:          phone
+        ip:          ip
+        usd:         price
+        dt:          datetime
+        u:           url       # url verification and prefixing
+        text:        text      # html escaping, cross-site scripting
+        str:         string    # just a string
+        name:        name      # letters and spaces
 
     # strict fields
     # you can use only defined fields
     strict:
-      class: M_StrictField
-      field-alias:
-        name:n
-        phone:p
+      class: M_Object
+      strict: 1
       field:
-        n:string
-        map: ["one", "two", "three"]
-        age:int        
-        p:phone
+        name:  ["alias", "n"]
+        n:     string
+        phone: ["alias", "p"]
+        p:     phone
+        map:   ["enum", "one", "two", "three"]
+        age:   int
 
 # alternative server connection
 m2-server2:

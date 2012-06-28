@@ -87,6 +87,30 @@ class M_Object implements ArrayAccess {
 
     // --------------------------------------------------------------------------------
 
+    // PUBLIC HIGH LEVEL FUNCTIONS
+
+    // Load with respect to caclulated fields, aliases, relationships ...
+    // use: "$this->_" to get loaded field list
+    PUBLIC function get($fields="") { # {field:value}
+        $fields = $this->MC->_fields($fields);
+        $this->load($fields);
+        if(!$fields && $this->loaded)
+            return $this->D;
+        $r = [];
+        foreach($fields as $f)
+            $r[$f] = isset($this->D[$f]) ? $this->D[$f] : $this->__get($f);
+        return $r;
+    }
+
+    // reload fields
+    // use only when some process can concurently change data
+    PUBLIC function reload() { # this
+        $this->_load();
+        return $this;
+    }
+
+    // --------------------------------------------------------------------------------
+
     // called from ::i to autoload record from db when autoload is not disabled !!
     // overload:
     //     to remove autoload
@@ -102,8 +126,10 @@ class M_Object implements ArrayAccess {
     }
 
     // load data - will load data only once
-    function load($fields="") { #
-        $fields = $this->MC->_fields($fields);
+    // works with actual fields only
+    function load($fields="") { // null
+        if (! is_array($fields))
+            $fields = explode(" ", $fields);
 
         if ($this->loaded === true)
             return;
@@ -114,7 +140,9 @@ class M_Object implements ArrayAccess {
             foreach($this->loaded as $k => $v)
                 if ($k!='_id')
                     $fields[$k] = false;
+            Profiler::in_off("M2:load", ["".$this, "*all*"]);
             $this->_load($fields);
+            Profiler::out();
             $this->loaded=true;
             return;
         }
@@ -128,24 +156,18 @@ class M_Object implements ArrayAccess {
             if (! $ftl)
                 return;
             $fields = $ftl;
-            Profiler::info("M2:load_of/partial", ["".$this, $fields]);
         }
 
         $this->_load($fields);
     }
 
-    // reload fields
-    function reload() { # this
-        $this->_load();
-        return $this;
-    }
 
     // low level - forced load/reload
     // avoid unless you want to re-query data from mongo
     // takes care of loaded fields
     function _load($fields="") { // {f:v} loaded fields
         if (! is_array($fields))
-            $fields = $this->MC->_fields($fields);
+            $fields = explode(" ", $fields);
 
         if ($fields) {
             Profiler::in_off("M:load/partial", ["".$this, $fields]);
@@ -178,19 +200,7 @@ class M_Object implements ArrayAccess {
         return $D;
     }
 
-    // Load with respect to caclulated fields and relationships
-    // use: "$this->_" to get loaded field list
-    function get($fields="") { # {field:value}
-        $fields = $this->MC->_fields($fields);
-        $this->load($fields);
-        if(!$fields && $this->loaded)
-            return $this->D;
 
-        $r = [];
-        foreach($fields as $f)
-            $r[$f] = isset($this->D[$f]) ? $this->D[$f] : $this->__get($f);
-        return $r;
-    }
 
     // --------------------------------------------------------------------------------
 
@@ -217,6 +227,26 @@ class M_Object implements ArrayAccess {
         }
         $this->D = [];
     }
+
+
+    function set(array $kv) {  // this
+        $this->MC->kv_aliases($kv); // take care of aliases
+        
+        $a = $this->MC->applyTypes($a);
+        Profiler::in_off("M:set", ["".$this, $a]);
+        $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
+        Profiler::out();
+        foreach($a as $k => $v) {
+            if ($p=strpos($k, '.')) {
+                $this->loaded = false;
+                unset($this->D[ substr($k, 0, $p) ]);
+            } else {
+                $this->D[$k] = $v;
+            }
+        }
+        return $this;
+    }
+
 
 
     // mongo::update build-in subfunction wrapper
@@ -270,28 +300,6 @@ class M_Object implements ArrayAccess {
     //     M::Alias(2)->inc(["counter" => 1]);
     //     M::Alias(2)->inc("counter");  << special case for inc, default is 1
 
-    // SET is low level function
-    // if you need calc fields, field-aliases - use save(array $kv)
-    /* low-level */ function set() {  # this
-        $a = func_get_args();
-        if (count($a)==2)
-            $a=[$a[0] => $a[1]];
-        else
-            $a=$a[0];
-        $a = $this->MC->applyTypes($a);
-        Profiler::in_off("M:set", ["".$this, $a]);
-        $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
-        Profiler::out();
-        foreach($a as $k => $v) {
-            if ($p=strpos($k, '.')) {
-                $this->loaded = false;
-                unset($this->D[ substr($k, 0, $p) ]);
-            } else {
-                $this->D[$k] = $v;
-            }
-        }
-        return $this;
-    }
 
     // smart addToSet
     // add("key", v1, v2, v3, ...)
@@ -363,6 +371,8 @@ class M_Object implements ArrayAccess {
     function save(array $set=[]) {
         if (! $set)
             return;
+        $T = $this->MC->C("field.$field");
+                
         $ts = [];
         foreach($set as $k => $v) {
 
@@ -438,78 +448,106 @@ class M_Object implements ArrayAccess {
     //
 
 
-    // PRECEDENCE:
-    //   FIELD > ALIAS > METHOD > MAGIC_FIELD > HAS-ONE > HAS-MANY
-    //   Magic fields - fields starting with _
-    function __get($key) {
-        if ( isset($this->D[$key]) )
-            return $this->D[$key];
-
-        // FIELD ALIAS
-        if ( $fa = $this->MC->C("field-alias.$key") )
-            return $this->__get($fa);
-
-        // non-existent loaded fields
-        if (is_array($this->loaded) && isset($this->loaded[$key]))
-            return null;
-
-        // MAGIC FIELDS
-        if ( $key[0] == '_' ) {
-            $key = substr($key, 1);
-            if ( $fa = $this->MC->C("field-alias.$key") )
-                $key = $fa;
-            if (! isset($D[$key]))
-                $this->load();
-            if (is_array($this->loaded) && isset($this->loaded[$key]))
+    // get does not change existing field types
+    // T - [type, ... options]
+    protected function _get($field, $T) {
+        switch($T[0]) {
+        case "array":  // empty array of whatever
+            return [];
+        case "method":
+            return call_user_func( [$this, "get$field"] );
+        case "has-one": // ["has-one", FK, db.collection]
+            $f = $T[1];
+            if (! isset($this->D[$fk]))
+                $this->load($fk);
+            if (! isset($D[$fk]))
                 return null;
-            if (! $key)
-                return $this->D;
-            if ($key == '_') // magic field representation (when possible)
-                return $this->MC->allMagic($this->D); // typed collection expected
-            if (! isset($this->D[$key])) {
-                if ( $fa = $this->MC->C("field-alias.$key") )
-                    return $this->__get("_".$fa);
-                return $this->MC->formatMagicField($key, null);
+            return M($T[2], $D[$fk]);
+        case "has-many": // ["has-many", FK, db.collection.KEY]
+            $fk = $T[1];
+            if (! isset($this->D[$fk]))
+                $this->load($fk);
+            if (! isset($D[$fk]))
+                return [];
+            list($db, $col, $key)=explode(".", $T[2], 3);
+            return M($T[2])->f([$key => $fk]);
+        }
+        return null;
+    }
+
+    // field is a deep field (as in "node.node.field")
+    protected function __get_deep($field) { // value
+        $p=explode(".", $field);
+        if (! isset($this->D[$p[0]]))
+            $this->load($p[0]);
+        $r=& $this->D;
+        foreach($p as $k) {
+            if (! isset($r[$k]))
+                break;
+            if (! is_array($r[$k])) {
+                $r = $r[$k];
+                break;
             }
-            return $this->MC->formatMagicField($key, $this->D[$key]);
+            $r = & $r[$k];
+        }
+        return $r;
+    }
+
+    // PRECEDENCE:
+    //   CHECK > ALIAS >  MAGIC > SPECIAL
+    //   Magic fields - fields starting with _
+    function __get($field) {
+        $T = $this->MC->C("field.$field");
+
+        // alias support
+        if (is_array($T) && $T[0]=='alias')
+            return $this->__get($T[1]);
+        
+        if (! $T && $this->MC->C("strict"))
+            throw new DomainException("unknown field $field");
+        
+        if ( isset($this->D[$field]) )
+            return $this->D[$field];
+
+        // Magic Fields
+        if ($field[0]=='_') {
+            $field = substr($field, 1);
+            if (! $field)  // ->_
+                return $this->D;
+            if ($field == '_') // magic field representation (when possible)
+                return $this->MC->allMagic($this->D); // typed collection expected
+            $T = $this->MC->C("field.$field");
+            if (is_array($T) && $T[0]=='alias') {
+                $field = $T[1];
+                $T = $this->MC->C("field.$field");
+            }
+            if (! $T)
+                throw new DomainException("type required for magic field $field");
+
+            
+            if (! isset($this->D[$field])) {
+                if (strpos($field, "."))
+                    $v = $this->__get_deep($field);
+                else {
+                    list($v)=$this->load($field);
+                }
+            }
+            return M_Type::getMagic($v, $T);
         }
 
-        //if (is_array($this->loaded))
-        //Profiler::info("loading: ", [$key, $this->loaded]);
+        if (! strpos($field, "."))
+            return $this->__get_deep($field);
 
-        // HAS-ONE
-        if ($c=$this->MC->C("has-one.$key")) {  # [FK, db.collection]
-            if (! isset($D[$c[0]]))
-                $this->load($c[0]);
-            if (! isset($this->D[$c[0]]))
-                return; // null
-            $fk=$this->D[$c[0]];
-            return M($c[1], $fk);
-        }
+        if (is_array($T))  // relations, methods, ...
+            return $this->_get($field, $T);  
 
-        // HAS-MANY
-        if ($c=$this->MC->C("has-many.$key")) { // [FK, db.collection.KEY]
-            if (! isset($D[$c[0]]))
-                $this->load($c[0]);
-            $fk=$this->D[$c[0]];
-            if (! $fk)
-                return null;
-            list($db, $col, $key)=explode(".", $c[1], 3);
-            return M($db.".".$col)->f( [$key => $fk] );
-        }
+        list($v) = $this->load($field);
 
-        $this->load();
-        if ( isset($this->D[$key]) )
-            return $this->D[$key];
-
-        if ( method_exists($this, "get$key") )
-            return call_user_func( [$this, "get$key"] );
-
-        // return array() for non existant array-type fields
-        if ($this->MC->C("field.$key") == 'array')
+        if (!$v && $T == 'array')
             return [];
 
-        return null;
+        return $v;
+
     }
 
     // PRECEDENCE:
@@ -519,7 +557,6 @@ class M_Object implements ArrayAccess {
     }
 
     function __unset($key) {
-        unset($this->D[$key]);
         $this->_unset($key);
     }
 
@@ -557,131 +594,28 @@ class M_Object implements ArrayAccess {
     // getting / setting deep nested items
 
     // M::Col($id)["node.node.field"] = "value";
-    function offsetSet($offset, $value) {
-        $this->set($offset, $value);
+    function offsetSet($field, $value) {
+        $this->save([$field => $value]);
     }
 
     // unset( $m_object["node.field"] )
-    function offsetUnset($offset) {
-        $this->_unset($offset);
+    function offsetUnset($fied) {
+        $this->_unset($field);
     }
 
     // isset( $m_object["node.field"] )
-    function offsetExists($offset) { # id of found record
-        return $this->MC->one($this->id, $offset);
+    function offsetExists($field) { // bool
+        return (bool)$this->__get($field);
     }
 
     // M::Alias($id)[$field]
-    function offsetGet($offset) { # value
-        if (! strpos($offset, "."))
-            return $this->__get($offset);
-        $magic = 0;
-        if ($offset[0]=='_') {
-            $magic = 1;
-            $offset = substr($offset, 1);
-        }
-        $p=explode(".", $offset);
-        if (! isset($this->D[$p[0]]))
-            $this->load($p[0]);
-        $r=& $this->D;
-        $z = null;
-        foreach($p as $k) {
-            if (! isset($r[$k]))
-                break;
-            if (! is_array($r[$k])) {
-                $z = $r[$k];
-                break;
-            }
-            $r = & $r[$k];
-            $z = $r;
-        }
-        if ($magic && $T=$this->MC->C("field.$offset")) {
-            $z = M_Type::getMagic($z, $T, false);
-        }
-        return $z;
+    function offsetGet($field) { // value
+        return $this->__get($field);
     }
 
 }
 
-/*
-
-  extend this class of you want to get errors when you access unknown fields
-
-  controls ORM style access and saves:
-  * read only defined fields/aliases, calc fields, magic_fields of defined fields/aliases
-  * write to defined fields/aliases, calc fields, magic_fields of defined fields/aliases
-
-  throws DomainException when trying to read/write unknown fields
-
-  TODO:
-    -- does not support inserts
-    -- does not support operations (see $op)
-
-*/
-class M_StrictField extends M_Object {
-
-    function __get($field) {
-        $MC = $this->MC;
-
-        // check field, alias, magic, function
-        if ( $fa = $MC->C("field-alias.$field") )
-            $field = $fa;
-
-        // do we know this field?
-        if ( $MC->C("field.$field") )
-            return parent::__get($field);
-
-        // calc field
-        if ( method_exists($this, "get$field") )
-            return call_user_func( [$this, "get$field"] );
-
-        // magic field - requiring to have underlying field
-        if ($field['0']=='_') {
-            $f = substr($field, 1);
-            if (! $f || $f=='_')
-                return parent::__get($field);
-            if (!$MC->C("field.$f")) {
-                // alias of magic field
-                if (! $MC->C("field-alias.$f") )
-                    throw new DomainException("unknown field $field($f)");
-            }
-            return parent::__get($field);
-        }
-
-        if ($MC->C("has-one.$field") || $MC->C("has-many.$field"))
-            return parent::__get($field);
-
-        throw new DomainException("unknown field $field");
-    }
-
-    /* low-level */ function set() {  // this
-        $a = func_get_args();
-        if (count($a)==2)
-            $a=[$a[0] => $a[1]];
-        else
-            $a=$a[0];
-        foreach($a as $field => $value) {
-            if (!$this->MC->C("field.$field"))
-                throw new DomainException("unknown field $field");
-        }
-        parent::set($a);
-        return $this;
-    }
-
-
-    // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
-    // physical fields only, no aliases
-    protected function op($op, array $r) {
-        if (isset($r[0]))
-            $r=[$r[0] => $r[1]];
-        $T=$this->MC->C("field");
-        foreach($r as $f => $v)
-            if (! isset($T[$f]))
-                throw new DomainException("unknown field $f");
-        return parent::op($op, $r);
-    }
-
-}
+// M_StrictField is deprecated - use "strict: 1" config option
 
 /*
   support for "class" field
