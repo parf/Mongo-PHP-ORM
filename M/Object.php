@@ -623,11 +623,11 @@ class M_StrictField extends M_Object {
         $MC = $this->MC;
 
         // check field, alias, magic, function
-        if ( $fa = $MC->C("field-alias.$field") )
+        if ($fa = $MC->C("field-alias.$field"))
             $field = $fa;
 
         // do we know this field?
-        if ( $MC->C("field.$field") )
+        if ($MC->C("field.$field") || $field=='_id')
             return parent::__get($field);
 
         // do we know this field? (as array)
