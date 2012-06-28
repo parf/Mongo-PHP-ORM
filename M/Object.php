@@ -415,6 +415,11 @@ class M_Object implements ArrayAccess {
         return $this->MC;
     }
 
+    // MAGIC representation of M_Object - all normal get accesses are magic, all magic are normal
+    final function M() { // M_Object_Magic
+        return new M_Object_Magic($this);
+    }
+
     // access to loaded data
     // use in getters to avoid recursion, use when sorting
     final function D($field=false) { // loaded field value
@@ -640,8 +645,10 @@ class M_StrictField extends M_Object {
                 return parent::__get($field);
             if (!$MC->C("field.$f")) {
                 // alias of magic field
-                if (! $MC->C("field-alias.$f") )
-                    throw new DomainException("Mongo_StrictField::get unknown magic field ".$this.".$field");
+                if (! $MC->C("field-alias.$f") ) {
+                    if (! $MC->C("field-alias.$f.*") )
+                        throw new DomainException("Mongo_StrictField::get unknown magic field ".$this.".$field");
+                }
             }
             return parent::__get($field);
         }
@@ -695,7 +702,7 @@ class M_StrictField extends M_Object {
 
     // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
     protected function op($op, array $r) {
-        if (isset($r[0]))
+        if (isset($r[1]))
             $r=[[$r[0] => $r[1]]];
         $T=$this->MC->C("field");
         foreach($r[0] as $f => $v) {
@@ -756,5 +763,103 @@ class M_StrictRouter extends M_Router {
 
 }
 
+/*
+  M_Object->M()
+  wrapper class, wraps/proxy M_Object
+
+  inverts magic flavor of function __get() only !!
+
+  all get requests are treated as magic requests when possible
+  all (magic)"_field" get requests are treated as NON-magic
+
+*/
+/* internal */ class M_Object_Magic extends M__Proxy implements ArrayAccess {
+
+    public $id;
+
+    function __construct($instance) {
+        $this->_instance=$instance;
+        $this->id=$instance->id;
+    }
+
+    public function M() {  // get original object back
+        return $this->_instance;
+    }
+
+    public function __get($key) {
+        if ($key=='_id')
+            return $this->_instance->_id;
+
+        if ($key[0]=='_')
+            return $this->_instance->__get(substr($key,1));
+
+        // FIELD ALIAS
+        if ( $fa = $this->_instance->MC()->C("field-alias.$key") )
+            $key = $fa;
+
+        // FIELD ALIAS
+        if ( $this->_instance->MC()->C("field.$key") || $this->_instance->MC()->C("field.$key.*") )
+            $key="_".$key;
+
+        return $this->_instance->__get($key);
+    }
+
+    // --------------------------------------------------------------------------------
+    // Array Access
+
+    function offsetSet($offset, $value) {
+        $this->_instance->offsetSet($offset, $value);
+    }
+
+    function offsetUnset($offset) {
+        $this->_instance->offsetUnset($offset);
+    }
+
+    function offsetExists($offset) {
+        return $this->_instance->offsetExists($offset);
+    }
+
+    function offsetGet($offset) { // value
+        if (! strpos($offset, "."))
+            return $this->__get($offset);
+        return $this->_instance->offsetGet('_'.$offset);
+    }
+
+}
+
+// using fancy name to avoid name collisions
+abstract class M__Proxy {
+
+    protected $_instance;
+
+    function __construct($instance) {
+        $this->_instance=$instance;
+    }
+
+    public function __call($meth, $args) {
+        return call_user_func_array( array($this->_instance, $meth), $args);
+    }
+
+    public static function __callstatic($meth, $args) {
+        return forward_static_call_array(array(get_class($this->_instance), $meth), $args);
+    }
+
+    public function __get($name) {
+        return $this->_instance->$name;
+    }
+
+    public function __set($name, $value) {
+        return $this->_instance->$name=$value;
+    }
+
+    public function __unset($name) {
+        unset($this->_instance->$name);
+    }
+
+    public function __isset($name) {
+        return isset($this->_instance->$name);
+    }
+
+}
 
 class NotFoundException extends RuntimeException {}

@@ -173,8 +173,9 @@ class M_TypeBase {
     // internally stored without 'http://' prefix
     // use magic access "_$url" to auto-add http:// (when needed)
     static function applyURL($v0) {
-        if (! is_string($v0))
+        if (! is_string($v0)) {
             self::e("", $v0, "url");
+        }
         // $v = filter_var($v0, FILTER_SANITIZE_URL);
         // ^^^ sanitize is stupid
         $v = trim($v0);

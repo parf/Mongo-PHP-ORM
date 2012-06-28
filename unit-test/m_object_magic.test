@@ -1,0 +1,75 @@
+#!/bin/env spartan-test
+<?
+
+// TypedCollection magic fields query support
+
+; $T = M::Typed();  // typed collection
+; $T->reset();      // drop all data, reset sequence
+$T->type;
+#={"_id":"int","ai.*":"int","aip.*":"ip","aip.2":"ip","arr":"array","as.*":"string","date":"date","datetime":"DateTime","dt":"datetime","en":["name","age","sex"],"int":"int","ip":"ip","map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+
+// prepare data
+; $T->dotInsert(["_id" =>1, "ph" => "6173720000", "unknown" => "some data", "str" => "<script> evil; </script>", "t.d" => 1340903553 /*time*/, "en" => 1, "x.y" => "z"]);
+; $t=$T(1);
+; $t->add("aip", 167772162, 167772164);
+
+// all fields
+$t->_;
+#={"_id":1,"aip":[167772162,167772164],"en":1,"ph":16173720000,"str":"<script> evil; <\/script>","t":{"d":1340856000},"unknown":"some data","x":{"y":"z"}}
+
+// all magic
+$t->__;
+#={"_id":"1","aip":["10.0.0.2","10.0.0.4"],"en":"age","ph":"(617)372-0000","str":"&lt;script&gt; evil; &lt;\/script&gt;","t":{"d":"Jun 28, 2012"},"unknown":"some data","x":{"y":"z"}}
+
+
+// all-magic object
+$m = $t->M();
+#={"class":"M_Object_Magic","0":{"id":1}}
+
+// get original object back
+$m->M();
+#={"class":"M_Object","0":{"id":1}}
+
+
+$m->id;
+#=1
+
+$m->_id;
+#=1
+
+$m->en;
+#="age"
+
+// ph works as _ph now
+$m->ph;
+#="(617)372-0000"
+
+// _ph works as ph now
+$m->_ph;
+#=16173720000
+
+$m->str;
+#="&lt;script&gt; evil; &lt;\/script&gt;"
+
+$m->unknown;
+#="some data"
+
+$m->aip;
+#=["10.0.0.2","10.0.0.4"]
+
+$m->_aip;
+#=[167772162,167772164]
+
+// Array Access
+$m["t.d"];
+#="Jun 28, 2012"
+
+$m["aip"];
+#=["10.0.0.2","10.0.0.4"]
+
+
+$m["x"];
+#={"y":"z"}
+$m["x.y"];
+#="z"
+

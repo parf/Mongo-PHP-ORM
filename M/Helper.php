@@ -68,35 +68,9 @@ class M_Helper {
         $F=array_flip(M::qw($fields)); // field => isset
         foreach ($F as $k => &$v) $v = 1;
         $C=M($collection);
-        $C->update([], ['$unset'=>$F], ['multiple'=>true, 'upsert' => false]);
+        $C->update([], ['$unset'=>$F], ['multiple'=>true, 'upsert' => false, 'fsync' => true]);
 
     }
-/*
-    version prior 26 Jun 2012 privided by Parf.
-    // remove fields from collection
-    // fields = space delimited field lists
-    static function unsetFields($collection, $fields) {
-        $F=array_flip(M::qw($fields)); // field => isset
-        $C=M($collection);
-        $ci=$C->find( array() ); // iterate over everthing
-        foreach($ci as $id => $v) {  // WTF - WHY ID is STRING?? when it is INT
-            $id=$v["_id"]; // right type
-            foreach($v as $f => $x) {
-                #vd($f, $id, $F);
-                if ( isset($F[$f]) ) {
-                    $C->update(array("_id" => $id),
-                               array('$unset' => array($f => 1))
-                               );
-
-                    #var_dump($v);
-                    #vd("id=$id f=$f");
-
-                }
-            }
-        }
-
-    }
-*/
 
     // Migrate MYSQL table to Mongo
     //
