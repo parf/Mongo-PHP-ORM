@@ -306,8 +306,7 @@ class M_Collection implements ArrayAccess {
             $r[1] = [$r[1] => $r[2]];
         }
 
-        if ($fa = $this->C("field-alias"))
-            $r[1] = $this->_kv_aliases($fa, $r[1]);
+        $r[1] = $this->_kv($r[1]);
 
         Profiler::in_off("M2:$op", [$this->sdc, $r[1]]);
         $this->update($r[0], [$op => $r[1]]);
@@ -685,6 +684,11 @@ class M_Collection implements ArrayAccess {
     }
 
     /* internal */ function _kv_aliases(array $kv) { // $kv
+        return $kv;
+    }
+
+    // _kv_aliases + applyTypes + more
+    /* internal */ function _kv(array $kv) { // $kv
         return $kv;
     }
 

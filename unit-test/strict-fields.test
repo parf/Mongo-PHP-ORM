@@ -78,7 +78,7 @@ $c->_cell;
 // Avoid using this kind of access - use add, push, pull
 // THIS IS AN ERROR !!
 $c["c.0"] = '(214) 333-44-55';
-#=["DomainException","type required for magic field test.strict[1].c.0",0]
+#=["DomainException","unknown field test.strict.c.0",0]
 
 
 
@@ -137,11 +137,11 @@ $C(4)->_phone;
 
 // unknown field assignment
 $C(4)->unknown_field = "ops";
-#=["DomainException","type required for magic field test.strict[4].unknown_field",0]
+#=["DomainException","unknown field test.strict.unknown_field",0]
 
 
 $C(4)->inc("test");
-#=["DomainException","type required for magic field test.strict[4].test",0]
+#=["DomainException","unknown field test.strict.test",0]
 
 
 // get all alias

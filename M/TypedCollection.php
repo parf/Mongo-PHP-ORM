@@ -328,22 +328,23 @@ final class M_TypedCollection extends M_Collection {
         return $kv;
     }
 
-    // INSERT / SET
+    // INSERT / SET / $OP
     // all-in-one key=>value type support
-    // 1. aliases
+    // 1. resolve aliases
     // 2. apply types
-    // 3. magic fields
-    // 4. strict check (when needed)
-    function _kv(array $kv) { // $kv
+    // 3. magic fields (_magic = 'value' resolved via M_Type::setMagic)
+    // 4. strict field check (when needed) (only defined fields allowed)
+    // 5. resolve method field (M_Object based)
+    function _kv(array $kv, $obj=null, $array_assign_check=false) { // $kv
         $strict = $this->C("strict");
-        $T = $this->type;
+        $T = $this->type; // FIELD => TYPE
         $rename = [];
         foreach ($kv as $f => &$v) {
             if ($f=='_id') {
                 $v = (int) $v;
                 continue;
             }
-            if ($f[0]=='_') { // magic field or alias
+            if ($f[0]=='_') { // MAGIC field or alias
                 $f0 = $f;
                 $f = substr($f, 1);
                 $t = @$T[$f];
@@ -354,17 +355,42 @@ final class M_TypedCollection extends M_Collection {
                 if (! $t)
                     throw new DomainException("type required for magic field $this.$f");
                 $v = M_Type::setMagic($v, $t);
-                $rename[$f] = $f0;
+                $rename[$f0] = $f;
                 continue;
             }
-            if (! isset($T[$f])) { // untyped
-                if (! $strict)
+
+            $t = @$T[$f]; // current field type
+
+            // METHODS && ALIASES
+            if ($t && is_array($t)) {
+                if ($t[0]=='alias') {
+                    $rename[$f]  = $t[1];
+                    $f = $t[1];
+                    $t = @ $T[$f];
+                }
+                if ($obj && $t[0]=='method') {
+                    $m = [$obj, "set$f"];
+                    if (is_callable($m))
+                        $v = $m($v);
                     continue;
-                throw new DomainException("unknown field $this.$f");
+                }
             }
 
+            if (! $t) { // untyped
+                if ($strict)
+                    throw new DomainException("unknown field $this.$f");
+                continue;
+            }
 
-        }
+            $v = M_Type::apply($v, $t);
+
+            if (! $array_assign_check)
+                continue;
+
+            $want_array = ($t=='array' || (is_array($t) && $t[0]=='array')); // typed or untyped array
+            if ($want_array && ! is_array($v))
+                throw new InvalidArgumentException("trying to set scalar to array field $this.$f");
+        } // foreach
         foreach ($rename as $from => $to) {
             $kv[$to] = $kv[$from];
             unset($kv[$from]);

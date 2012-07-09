@@ -8,6 +8,10 @@ $T->type["aip"]; // array of IP class
 ; $T->insert(["_id" => 1000]);
 ; $t=$T(1000);
 
+// Can't assign scalar to array elements!!
+$t->aip = "scalar";
+#=["InvalidArgumentException","trying to set scalar to array field test.typed.aip",0]
+
 ; $t->add("aip", "192.168.0.1", 3232235778, '10.0.0.1', '4.4.4.4');
 
 $t->aip;

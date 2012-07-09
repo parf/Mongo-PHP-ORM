@@ -193,16 +193,7 @@ class M_Object implements ArrayAccess {
     }
 
     function set(array $kv) {  // this
-        /* REWRITE !! to one method */
-        $T = $this->MC->type;
-        $kv = $this->MC->_kv_aliases($kv); // take care of aliases
-        $kv = $this->MC->applyTypes($kv, $this);
-        if ($this->MC->C("strict")) {
-            foreach($kv as $k => $v)
-                if (! @$T[$k])
-                    throw new DomainException("type required for magic field $this.$k");
-        }
-        /* ^^^^ */
+        $kv = $this->MC->_kv($kv, $this, true);
         Profiler::in_off("M:set", ["".$this, $kv]);
         // $this->dbg($kv);
         $this->MC->MC()->update(["_id" => $this->id], ['$set' => $kv]);
@@ -234,16 +225,13 @@ class M_Object implements ArrayAccess {
         if (array_key_exists(1, $r))
             $r = [ [$r[0] => $r[1]] ];
 
-        if ($this->MC->C("strict")) {
-            $T = $this->MC->type;
-            foreach($r[0] as $k => $v)
-                if (! @$T[$k])
-                    throw new DomainException("type required for magic field $this.$k");
-        }
-
         foreach($r[0] as $k => $v)
             $this->reset($k);
-        $this->MC->update($this->id, [$op => $r[0]]);
+        
+        // 2.1 way
+        $kv = $this->MC->_kv($r[0]);
+        $this->MC->MC()->update(['_id' => $this->id], [$op => $kv]);
+        
         return $this;
     }
 
