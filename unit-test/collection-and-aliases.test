@@ -2,16 +2,17 @@
 
 // ALIASES in COLLECTIONS
 ; $B = M::Base();
-$B->C("field-alias");
-#={"name-alias":"name","name_alias":"name"}
+
+$B->C("field");
+#={"name-alias":["alias","name"],"name_alias":["alias","name"]}
+
 ; $B->remove([]);
 // reset sequence for M::Base
 ; M_Sequence::reset("".$B);
 
+// INSERT & ALIASES
 ; $B->insert(["name" => "test1"]);
-; $B->insert(["name" => "test2"]);
-
-// ALIAS + INSERT
+; $B->insert(["name-alias" => "test2"]);
 ; $B->insert(["name_alias" => "test3"]);
 M::Base()->f([], "name");
 #={"1":{"_id":1,"name":"test1"},"2":{"_id":2,"name":"test2"},"3":{"_id":3,"name":"test3"}}
@@ -19,7 +20,6 @@ M::Base()->f([], "name");
 // ALIAS in QUERY: FIELD LIST
 M::Base()->f([], "name-alias");
 #={"1":{"_id":1,"name":"test1"},"2":{"_id":2,"name":"test2"},"3":{"_id":3,"name":"test3"}}
-
 // ALIAS in QUERY: QUERY
 M::Base()->findOne(["name-alias" => "test3"]);
 #={"_id":3,"name":"test3"}
@@ -36,5 +36,3 @@ $B[3];
 #={"_id":3,"name":-7}
 
 
-// Magic Fields Query
-// ; $T = M::Typed();

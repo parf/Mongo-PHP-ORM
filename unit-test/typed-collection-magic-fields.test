@@ -1,6 +1,8 @@
 #!/bin/env spartan-test
 <?
 
+M::reset();
+#=null
 // TypedCollection magic fields query support
 
 ; $T = M::Typed();  // typed collection

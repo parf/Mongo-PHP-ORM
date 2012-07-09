@@ -13,8 +13,9 @@ class M_Helper {
     // by default lists only unknown fields
     static function fields($collection, $hide_known_fields=true, $lv2=true) {
         $field=array();
-        $ci=M($collection)->find( array() ); // iterate over everthing
-        $known=M($collection)->config("field-type");
+        $MC = M($collection);
+        $ci=$MC->find( array() ); // iterate over everthing
+        $known=$MC->C("field");
         foreach($ci as $row) {
             foreach($row as $f => $v) {
                 if (is_numeric($f))
@@ -60,30 +61,16 @@ class M_Helper {
         }
     }
 
+
     // remove fields from collection
     // fields = space delimited field lists
     static function unsetFields(/*string*/ $collection, /*string*/ $fields) {
         $F=array_flip(M::qw($fields)); // field => isset
+        foreach ($F as $k => &$v) $v = 1;
         $C=M($collection);
-        $ci=$C->find( array() ); // iterate over everthing
-        foreach($ci as $id => $v) {  // WTF - WHY ID is STRING?? when it is INT
-            $id=$v["_id"]; // right type
-            foreach($v as $f => $x) {
-                #vd($f, $id, $F);
-                if ( isset($F[$f]) ) {
-                    $C->update(array("_id" => $id),
-                               array('$unset' => array($f => 1))
-                               );
-
-                    #var_dump($v);
-                    #vd("id=$id f=$f");
-
-                }
-            }
-        }
+        $C->update([], ['$unset'=>$F], ['multiple'=>true, 'upsert' => false, 'fsync' => true]);
 
     }
-
 
     // Migrate MYSQL table to Mongo
     //

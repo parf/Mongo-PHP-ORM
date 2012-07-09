@@ -1,4 +1,5 @@
 <?
+
 /*
 
 ORM for Mongo -
@@ -46,11 +47,11 @@ class M_Object implements ArrayAccess {
 
     protected $MC;  // M_Collection
     protected $loaded=false;    // false - DATA NOT LOADED
-                                // hash("field" => 1) - some fields loaded
+                                // hash("field" => 1) - specific fields loaded
                                 // true - all data loaded
-    protected $D=[];      // read data cache
+    protected $D=[];            // read data cache
 
-    static $debug = 0;
+    static $debug = 0;          // for dbg function only
 
     // instantiate object by id (primary key)
     static function i($MC, $id, $autoload=true) { # instance | NotFoundException
@@ -104,7 +105,7 @@ class M_Object implements ArrayAccess {
 
     // reload fields
     // use only when some process can concurently change data
-    PUBLIC function reload() { # this
+    PUBLIC function reload() { // this
         $this->_load();
         return $this;
     }
@@ -128,18 +129,17 @@ class M_Object implements ArrayAccess {
     // load data - will load data only once
     // works with actual fields only
     function load($fields="") { // null
-        if (! is_array($fields))
-            $fields = explode(" ", $fields);
-
         if ($this->loaded === true)
             return;
 
-        // load all - exclude already loaded fields
-        if (! $fields && is_array($this->loaded)) { // already loaded fields
+        // LOAD ALL - exclude already loaded fields
+        if (! $fields) {
             $fields= [];
-            foreach($this->loaded as $k => $v)
-                if ($k!='_id')
-                    $fields[$k] = false;
+            if (is_array($this->loaded)) { //
+                foreach($this->loaded as $k => $v)
+                    if ($k!='_id')
+                        $fields[$k] = false;
+            }
             Profiler::in_off("M2:load", ["".$this, "*all*"]);
             $this->_load($fields);
             Profiler::out();
@@ -147,8 +147,12 @@ class M_Object implements ArrayAccess {
             return;
         }
 
-        // do not load already loaded fields
-        if ($fields && is_array($this->loaded) && isset($fields[0])) { // already loaded fields
+        if (! is_array($fields))
+            $fields = explode(" ", $fields);
+
+        // LOAD SPECIFIC - do not load already loaded fields
+        // only string($fields) and [$field, ... ] are supported
+        if (is_array($this->loaded) && isset($fields[0])) { // already loaded fields
             $ftl = []; // fields to load
             foreach($fields as $f)
                 if (! isset($this->loaded[$f]))
@@ -160,46 +164,6 @@ class M_Object implements ArrayAccess {
 
         $this->_load($fields);
     }
-
-
-    // low level - forced load/reload
-    // avoid unless you want to re-query data from mongo
-    // takes care of loaded fields
-    function _load($fields="") { // {f:v} loaded fields
-        if (! is_array($fields))
-            $fields = explode(" ", $fields);
-
-        if ($fields) {
-            Profiler::in_off("M:load/partial", ["".$this, $fields]);
-            $D = $this->MC->findOne($this->id, $fields);
-            $this->D = $D + $this->D;
-            $lf = []; // loaded fields
-            if (isset($fields[0])) { // list of fields
-                foreach($fields as $f)
-                    $lf[$f] = 1;
-            } else { // fields => false/true
-                foreach($fields as $f => $v)
-                    $lf[$f] = 1;
-            }
-            // unset($lf["_id"]);
-            $lf["_id"]=1;
-            if (is_array($this->loaded))
-                $this->loaded = $this->loaded + $lf;
-            else
-                $this->loaded = $lf;
-        } else {
-            Profiler::in_off("M:load", "".$this);
-            $this->D = $D = $this->MC->findOne($this->id);
-            $this->loaded = true;
-        }
-        Profiler::out();
-        if (! isset($D["_id"])) {
-            $this->loaded = false;
-            throw new NotFoundException("".$this);
-        }
-        return $D;
-    }
-
 
 
     // --------------------------------------------------------------------------------
@@ -228,26 +192,36 @@ class M_Object implements ArrayAccess {
         $this->D = [];
     }
 
-
     function set(array $kv) {  // this
-        $this->MC->kv_aliases($kv); // take care of aliases
-        
-        $a = $this->MC->applyTypes($a);
-        Profiler::in_off("M:set", ["".$this, $a]);
-        $this->MC->MC()->update(["_id" => $this->id], ['$set' => $a]);
+        /* REWRITE !! to one method */
+        $T = $this->MC->type;
+        $kv = $this->MC->_kv_aliases($kv); // take care of aliases
+        $kv = $this->MC->applyTypes($kv, $this);
+        if ($this->MC->C("strict")) {
+            foreach($kv as $k => $v)
+                if (! @$T[$k])
+                    throw new DomainException("type required for magic field $this.$k");
+        }
+        /* ^^^^ */
+        Profiler::in_off("M:set", ["".$this, $kv]);
+        // $this->dbg($kv);
+        $this->MC->MC()->update(["_id" => $this->id], ['$set' => $kv]);
         Profiler::out();
-        foreach($a as $k => $v) {
+        // take care of cached data
+        foreach($kv as $k => $v) {
             if ($p=strpos($k, '.')) {
-                $this->loaded = false;
-                unset($this->D[ substr($k, 0, $p) ]);
+                $k0 = substr($k, 0, $p); // top key
+                if (is_array($this->loaded))
+                    unset($this->loaded[$k0]);
+                else
+                    $this->loaded = false;
+                unset($this->D[$k0]);
             } else {
                 $this->D[$k] = $v;
             }
         }
         return $this;
     }
-
-
 
     // mongo::update build-in subfunction wrapper
     // supports op($op, [[$key:$value]]) and op($q, [$key, $value])
@@ -257,19 +231,19 @@ class M_Object implements ArrayAccess {
             trigger_error("not enough params");
             die;
         }
-        if (! array_key_exists(1, $r)) {
+        if (array_key_exists(1, $r))
+            $r = [ [$r[0] => $r[1]] ];
+
+        if ($this->MC->C("strict")) {
+            $T = $this->MC->type;
             foreach($r[0] as $k => $v)
-                $this->reset($k);
-            return $this->MC->update($this->id, [$op => $r[0]]);
+                if (! @$T[$k])
+                    throw new DomainException("type required for magic field $this.$k");
         }
-        if (is_array($r[0])) {
-            trigger_error("can't mix KV-Array and 'key, value' syntax");
-            die;
-        }
-        $this->reset($r[0]);
-        Profiler::in_off("M:$op", ["".$this, $r]);
-        $this->MC->update($this->id, [$op => [$r[0] => $r[1]]]);
-        Profiler::out();
+
+        foreach($r[0] as $k => $v)
+            $this->reset($k);
+        $this->MC->update($this->id, [$op => $r[0]]);
         return $this;
     }
 
@@ -365,60 +339,11 @@ class M_Object implements ArrayAccess {
         return $this->op('$rename', $a);
     }
 
-    // set with respect to setters and field aliases
-    // PRECEDENCE:
-    //   METHOD > FIELD > MAGIC > ALIAS
-    function save(array $set=[]) {
+    // Legacy
+    function save(array $set) {
         if (! $set)
             return;
-        $T = $this->MC->C("field.$field");
-                
-        $ts = [];
-        foreach($set as $k => $v) {
-
-            if ( method_exists($this, "set$k") ) {
-                $v = $this->{"set$k"}($v);
-                if ($v !== null)
-                    $ts[$k] = $v;
-                continue;
-            }
-
-            if (isset($this->D[$k]) && $this->D[$k]===$v) // skip useless writes
-                continue;
-
-            // MAGIC FIELDS
-            if ( $k[0] == '_' ) {
-                $k = substr($k, 1);
-                if (!$k) {
-                    trigger_error("can't assign to '_' field");
-                    die;
-                }
-                if ( $fa = $this->MC->C("field-alias.$k") )
-                    $k = $fa;
-
-                $ts[$k] = $this->MC->setMagicField($k, $v);
-                continue;
-            }
-
-            // Field Alias
-            if ( $fa = $this->MC->C("field-alias.$k") ) {
-                $key = $fa;
-                if (isset($this->D[$k]) && $this->D[$k]===$v) // skip useless writes
-                    continue;
-                $ts[$k] = $v;
-                continue;
-            }
-
-            $ts[$k] = $v;
-
-            if ($this->MC->C("field.$k") == 'array' && ! is_array($v)) {
-                trigger_error("can't assign scalar to array");
-                die;
-            }
-        }
-
-        if ($ts)
-            $this->set($ts);
+        $this->set($set);
     }
 
     // json dump
@@ -429,6 +354,11 @@ class M_Object implements ArrayAccess {
 
     final function MC() { # MongoCollection
         return $this->MC;
+    }
+
+    // MAGIC representation of M_Object - all normal get accesses are magic, all magic are normal
+    final function M() { // M_Object_Magic
+        return new M_Object_Magic($this);
     }
 
     // access to loaded data
@@ -444,104 +374,173 @@ class M_Object implements ArrayAccess {
     }
 
     // --------------------------------------------------------------------------------
+    // ADVANCED USERS ONLY - SEMI INTERNAL
+    //
+
+    // low level - forced load/reload
+    // avoid unless you want to re-query data from mongo
+    // takes care of loaded fields
+    PUBLIC function _load($fields="") { // {f:v} loaded fields
+        if ($fields && ! is_array($fields))
+            $fields = explode(" ", $fields);
+
+        if ($fields) {
+            Profiler::in_off("M:load/partial", ["".$this, $fields]);
+            $D = $this->MC->findOne($this->id, $fields);
+            if (! $D) {
+                $this->loaded = false;
+                throw new NotFoundException("".$this);
+            }
+            $this->D = $D + $this->D;
+            $lf = []; // loaded fields
+            if (isset($fields[0])) { // list of fields
+                foreach($fields as $f)
+                    $lf[$f] = 1;
+            } else { // fields => false/true
+                foreach($fields as $f => $v)
+                    $lf[$f] = 1;
+            }
+            // unset($lf["_id"]);
+            $lf["_id"]=1;
+            if (is_array($this->loaded))
+                $this->loaded = $this->loaded + $lf;
+            else
+                $this->loaded = $lf;
+        } else {
+            Profiler::in_off("M:load/all", "".$this);
+            $this->D = $D = $this->MC->findOne($this->id);
+            if (! $this->D) {
+                $this->loaded = false;
+                $this->D = [];
+                throw new NotFoundException("".$this);
+            }
+            $this->loaded = true;
+        }
+        Profiler::out();
+        return $D;
+    } // _load
+
+    // --------------------------------------------------------------------------------
     // INTERNAL
     //
 
+    private function _g($field, $default=null) {
+        if (! isset($this->D[$field]))
+            $this->load($field);
+        return isset($this->D[$field]) ? $this->D[$field] : $default;
+    }
 
     // get does not change existing field types
     // T - [type, ... options]
     protected function _get($field, $T) {
         switch($T[0]) {
         case "array":  // empty array of whatever
-            return [];
+            return $this->_g($field, []);
         case "method":
-            return call_user_func( [$this, "get$field"] );
+            $m = [$this, "get$field"];
+            if (is_callable($m))
+                return $m();
+            return $this->_g($field);
         case "has-one": // ["has-one", FK, db.collection]
-            $f = $T[1];
-            if (! isset($this->D[$fk]))
-                $this->load($fk);
-            if (! isset($D[$fk]))
+            $fk = $this->_g($T[1]);
+            if (! $fk)
                 return null;
-            return M($T[2], $D[$fk]);
+            return M($T[2], $fk);
         case "has-many": // ["has-many", FK, db.collection.KEY]
-            $fk = $T[1];
-            if (! isset($this->D[$fk]))
-                $this->load($fk);
-            if (! isset($D[$fk]))
+            $fk = $this->_g($T[1]);
+            if (! $fk)
                 return [];
             list($db, $col, $key)=explode(".", $T[2], 3);
-            return M($T[2])->f([$key => $fk]);
+            return M($db.".".$col)->f([$key => $fk]);
+        case "enum":
+            if (! isset($this->D[$field]))
+                $this->load($field);
+            return @$this->D[$field];
         }
         return null;
     }
 
     // field is a deep field (as in "node.node.field")
     protected function __get_deep($field) { // value
-        $p=explode(".", $field);
+        $p = explode(".", $field);
         if (! isset($this->D[$p[0]]))
             $this->load($p[0]);
-        $r=& $this->D;
+        $r = & $this->D;
         foreach($p as $k) {
             if (! isset($r[$k]))
-                break;
-            if (! is_array($r[$k])) {
-                $r = $r[$k];
-                break;
-            }
+                return null;
+            if (! is_array($r[$k]))
+                return $r[$k];
             $r = & $r[$k];
         }
         return $r;
     }
 
+    // magic representation of a field
+    /* protected */ function __get_magic($field, $exception=true) {
+        if (! $field)  { // ->_
+            $this->load();
+            return $this->D;
+        }
+        // ->__ allMagic
+        if ($field == '_') // magic field representation (when possible)
+            return $this->MC->allMagic($this->D); // typed collection expected
+
+        $T = @$this->MC->type[$field];
+        if ($T && is_array($T) && $T[0]=='alias') {
+            $field = $T[1];
+            $T = @$this->MC->type[$field];
+        }
+        if (! $T) {
+            if ($exception)
+                throw new DomainException("type required for magic field $this.$field");
+            if (strpos($field, "."))
+                return $this->__get_deep($field);
+            return $this->_g($field);
+        }
+
+        if (! isset($this->D[$field])) {
+            if (strpos($field, ".")) {
+                $v = $this->__get_deep($field);
+            } else {
+                $this->load($field);
+                $v = @$this->D[$field];
+            }
+        } else {
+            $v = $this->D[$field];
+        }
+        return M_Type::getMagic($v, $T);
+    }
+
     // PRECEDENCE:
-    //   CHECK > ALIAS >  MAGIC > SPECIAL
+    //   ALIAS/SPECIAL > FIELD > MAGIC > DEEP
     //   Magic fields - fields starting with _
     function __get($field) {
         $T = $this->MC->C("field.$field");
 
-        // alias support
-        if (is_array($T) && $T[0]=='alias')
-            return $this->__get($T[1]);
-        
-        if (! $T && $this->MC->C("strict"))
-            throw new DomainException("unknown field $field");
-        
+        // alias, relation, method, etc ...
+        if (is_array($T)) {
+            if ($T[0]=='alias')
+                return $this->__get($T[1]);
+            return $this->_get($field, $T);
+        }
+
+        if (! $T && $this->MC->C("strict") && $field[0]!='_')
+            throw new DomainException("unknown field $this.$field");
+
         if ( isset($this->D[$field]) )
             return $this->D[$field];
 
-        // Magic Fields
-        if ($field[0]=='_') {
-            $field = substr($field, 1);
-            if (! $field)  // ->_
-                return $this->D;
-            if ($field == '_') // magic field representation (when possible)
-                return $this->MC->allMagic($this->D); // typed collection expected
-            $T = $this->MC->C("field.$field");
-            if (is_array($T) && $T[0]=='alias') {
-                $field = $T[1];
-                $T = $this->MC->C("field.$field");
-            }
-            if (! $T)
-                throw new DomainException("type required for magic field $field");
+        // Magic Field
+        if ($field[0]=='_')
+            return $this->__get_magic(substr($field, 1));
 
-            
-            if (! isset($this->D[$field])) {
-                if (strpos($field, "."))
-                    $v = $this->__get_deep($field);
-                else {
-                    list($v)=$this->load($field);
-                }
-            }
-            return M_Type::getMagic($v, $T);
-        }
-
-        if (! strpos($field, "."))
+        // Deep Field
+        if (strpos($field, "."))
             return $this->__get_deep($field);
 
-        if (is_array($T))  // relations, methods, ...
-            return $this->_get($field, $T);  
-
-        list($v) = $this->load($field);
+        $this->load($field);
+        $v = @$this->D[$field];
 
         if (!$v && $T == 'array')
             return [];
@@ -553,7 +552,7 @@ class M_Object implements ArrayAccess {
     // PRECEDENCE:
     //   METHOD > FIELD > MAGIC > ALIAS
     function __set($key, $value) {
-        $this->save([$key => $value]);
+        $this->set([$key => $value]);
     }
 
     function __unset($key) {
@@ -663,5 +662,93 @@ class M_StrictRouter extends M_Router {
 
 }
 
+/*
+  M_Object->M()
+  wrapper class, wraps/proxy M_Object
+
+  inverts magic flavor of function __get() only !!
+
+  all get requests are treated as magic requests when possible
+  all (magic)"_field" get requests are treated as NON-magic
+
+*/
+/* internal */ class M_Object_Magic extends M__Proxy implements ArrayAccess {
+
+    public $id;
+
+    function __construct($instance) {
+        $this->_instance=$instance;
+        $this->id=$instance->id;
+    }
+
+    public function M() {  // get original object back
+        return $this->_instance;
+    }
+
+    public function __get($key) {
+        if ($key=='_id')
+            return $this->_instance->_id;
+
+        if ($key[0]=='_')
+            return $this->_instance->__get(substr($key,1));
+
+        return $this->_instance->__get_magic($key, false);
+    }
+
+    // --------------------------------------------------------------------------------
+    // Array Access
+
+    function offsetSet($offset, $value) {
+        $this->_instance->offsetSet($offset, $value);
+    }
+
+    function offsetUnset($offset) {
+        $this->_instance->offsetUnset($offset);
+    }
+
+    function offsetExists($offset) {
+        return $this->_instance->offsetExists($offset);
+    }
+
+    function offsetGet($offset) { // value
+        return $this->__get($offset);
+    }
+
+}
+
+// using fancy name to avoid name collisions
+abstract class M__Proxy {
+
+    protected $_instance;
+
+    function __construct($instance) {
+        $this->_instance=$instance;
+    }
+
+    public function __call($meth, $args) {
+        return call_user_func_array( array($this->_instance, $meth), $args);
+    }
+
+    public static function __callstatic($meth, $args) {
+        return forward_static_call_array(array(get_class($this->_instance), $meth), $args);
+    }
+
+    public function __get($name) {
+        return $this->_instance->$name;
+    }
+
+    public function __set($name, $value) {
+        return $this->_instance->$name=$value;
+    }
+
+    public function __unset($name) {
+        unset($this->_instance->$name);
+    }
+
+    public function __isset($name) {
+        return isset($this->_instance->$name);
+    }
+
+}
 
 class NotFoundException extends RuntimeException {}

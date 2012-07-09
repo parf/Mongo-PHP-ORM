@@ -39,13 +39,15 @@ m2:
 
     # collection: test.something
     something:
-       class: M_Something
-       field:
-         RelationField: ["has-one", "key", "db.collection"]
-         Manager:       ["has-one", "m_id", "test.something"]
-         Base:          ["has-one", "base_id", "test.base"]
-         RelationField: ["has-many", "key", "db.collection.key"]
-         Subordinates:  ["has-many", "_id", "test.something.m_id"]
+      class: M_Something
+      field:
+        One2One-RelationField: ["has-one", "key", "db.collection"]
+        Manager:       ["has-one", "m_id", "test.something"]
+        Base:          ["has-one", "base_id", "test.base"]
+        One2Many-RelationField: ["has-many", "key", "db.collection.key"]
+        Subordinates:  ["has-many", "_id", "test.something.m_id"]
+        mph:           ["method"]  # calc field
+        password:      ["method"]
 
     no_autoload:
       # "" means no fields
@@ -57,7 +59,7 @@ m2:
 
     # specific fields autoload
     sf_autoload:
-      autoload: "name age mmm"
+      autoload: name age mmm
 
     typed:
       field:
@@ -75,13 +77,13 @@ m2:
         ai:          ["array", "int"]
         as:          ["array", "string"]
         aip:         ["array", "ip"]
+        aip.1:       ip
         aip.2:       ip
-        en:          ["enum", "name", "age", "sex"]
-        map:
-            0: enum
-            y: yksi
-            ka: kaksi
-            ko: kolme
+        # ENUM types
+        # same as:
+        # en         ["enum", {0:"name", 1:"age", 2:"sex"}]
+        en:          ["enum", ["name", "age", "sex"]]
+        map:         ["enum", {"y":"yksi", "ka":"kaksi", "ko":"kolme"}]
         date:        date
         datetime:    DateTime
         ph:          phone
@@ -100,11 +102,15 @@ m2:
       strict: 1
       field:
         name:  ["alias", "n"]
-        n:     string
         phone: ["alias", "p"]
+        fax:   ["alias", "f"]
+        cell:  ["alias", "c"]
+        n:     string
         p:     phone
-        map:   ["enum", "one", "two", "three"]
+        map:   ["enum", ["one", "two", "three"]]
         age:   int
+        f:     ["array", "phone"]
+        c:     ["array", "phone"]
 
 # alternative server connection
 m2-server2:

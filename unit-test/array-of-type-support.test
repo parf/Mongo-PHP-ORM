@@ -1,10 +1,10 @@
 #!/bin/env spartan-test
 
 ; $T=M::Typed();
-$T->type["aip.*"]; // array of IP class
-#="ip"
+$T->type["aip"]; // array of IP class
+#=["array","ip"]
 
-; $T->remove([]); // remove all
+; $T->remove([]); // clean up 
 ; $T->insert(["_id" => 1000]);
 ; $t=$T(1000);
 
@@ -14,7 +14,7 @@ $t->aip;
 #=[3232235521,3232235778,167772161,67372036]
 
 // MAGIC Field - human reabable presentation
-// Type: "aip.*:ip"
+// Type: "aip"
 $t->_aip;
 #=["192.168.0.1","192.168.1.2","10.0.0.1","4.4.4.4"]
 $t["_aip"];
@@ -25,12 +25,16 @@ $t->_aip[1];
 $t["aip.1"];
 #=3232235778
 $t->{"aip.1"};
-#=null
+#=3232235778
+
 
 // We do not want to support this notation - magic field + numeric index
+$t["_aip.0"];
+#=["DomainException","type required for magic field test.typed[1000].aip.0",0]
+
+// !! UNLESS it is exlplicitely defined !!
 $t["_aip.1"];
-#=3232235778
-// ^^ no magic expansion
+#="192.168.1.2"
 
 // Specially defined type for "aip.2" will always work for direct saves / reads
 $t["_aip.2"];

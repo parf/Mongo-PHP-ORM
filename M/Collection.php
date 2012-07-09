@@ -119,8 +119,11 @@ class M_Collection implements ArrayAccess {
     }
 
     // find wrapper - returns array instead of MongoCollection
-    function f($query, $fields="") { # Array
-        return iterator_to_array( $this->find($query, $fields) );
+    function f($query, $fields="") { // Array
+        Profiler::in_off("M::f", ["".$this, $query, $fields]);
+        $r = iterator_to_array( $this->find($query, $fields) );
+        Profiler::out();
+        return $r;
     }
 
     // Safe Find
@@ -399,10 +402,8 @@ class M_Collection implements ArrayAccess {
     }
 
     // Sequences
-    // see Sequence/Mongo.inc for details
-    // * Does not support databases
     // * tracking collection "sequence" located in the same db as collection
-    function next($inc=1) { #
+    function next($inc=1) { // next id
         return M_Sequence::next($this->name, $inc, true); // autocreate
     }
 
@@ -483,7 +484,7 @@ class M_Collection implements ArrayAccess {
     //    :sort - hash or "space delimited field list" (if field starts with "-" - sort descending)
     // SPECIAL query field: ":pager" - pointer to Pager class instance.
     // IMPORTANT. $pager->page_size has priority over :limit as well as $pager->start has priority over :skip-
-    function find($query, $fields="") { # MongoCursor
+    function find($query=[], $fields="") { # MongoCursor
         Profiler::in("M2::find", [$this->sdc, $query, $fields]);
         $query  = $this->_query($query);
         $fields = $this->_fields($fields);
@@ -500,8 +501,6 @@ class M_Collection implements ArrayAccess {
         }
 
         $mc=$this->MC->find($query, $fields); // MongoCursor
-        Profiler::out();
-
         if ($sort) {
             if (! is_array($sort)) { # space delimited fields. if field starts with "-" - sort desc
                 $_sort=array();
@@ -522,6 +521,8 @@ class M_Collection implements ArrayAccess {
             $mc = $mc->skip($skip);
         if ($limit)
             $mc = $mc->limit($limit);
+
+        Profiler::out();
         return $mc;
     }
 
@@ -680,8 +681,6 @@ class M_Collection implements ArrayAccess {
     function _query($q) { # q
         if (! is_array($q))
             return ["_id" => (int)$q];
-        if ($fa = $this->C("field-alias"))
-            return $this->_kv_aliases($fa, $q);
         return $q;
     }
 

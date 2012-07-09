@@ -1,5 +1,5 @@
 #!/bin/env spartan-test
-
+<?
 //  
 // https://github.com/parf/spartan-test
 //
@@ -7,12 +7,19 @@
 // Mongo ORM v2
 // https://github.com/parf/Mongo-PHP-ORM
 
+include_once "init.php";
+#=true
+
+M::reset();
+#=null
+
 M();
 #={"class":"Mongo","0":{"connected":true,"status":null}}
 M("test.sequence");
 #={"class":"M_Collection","0":{"name":"test.sequence","sdc":"test.sequence","server":""}}
 M::Base();
-#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+#={"class":"M_TypedCollection","0":{"type":{"name_alias":["alias","name"],"name-alias":["alias","name"],"_id":"int"},"name":"test.base","sdc":"test.base","server":""}}
+
 M::Base(1);
 #={"class":"M_Object","0":{"id":1}}
 
@@ -48,7 +55,9 @@ $c->v();
 $c->name;
 #="Parf"
 $c->v(); // all data should be loaded
-#={"D":{"_id":1,"name":"Parf","age":38},"id":1,"loaded":true}
+#={"D":{"_id":1,"name":"Parf","age":38},"id":1,"loaded":{"age":1,"_id":1,"name":1}}
+
+
 
 // _id load
 $a_id->C("autoload");
@@ -65,7 +74,9 @@ $c->v();
 $c->name;
 #="Vikki"
 $c->v(); // all data loaded
-#={"D":{"_id":1,"name":"Vikki","age":0.6},"id":1,"loaded":true}
+#={"D":{"_id":1,"name":"Vikki"},"id":1,"loaded":{"_id":1,"name":1}}
+
+
 
 // specific fields load
 $a_sf->C("autoload");
@@ -81,14 +92,15 @@ $c->age;
 #=6
 $c->v();
 #={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1,"_id":1}}
-$c->mmm;  # autoloaded but non-exiting field
+$c->mmm;  # autoloaded but non-existing field
 #=null
 $c->v();
 #={"D":{"_id":1,"name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1,"_id":1}}
 $c->sex;  # non autloaded field
 #="male"
 $c->v();
-#={"D":{"_id":1,"sex":"male","name":"Ted","age":6},"id":1,"loaded":true}
+#={"D":{"_id":1,"sex":"male","name":"Ted","age":6},"id":1,"loaded":{"name":1,"age":1,"mmm":1,"_id":1,"sex":1}}
+
 
 // untyped operation testing
 ; M::Base()->insert(["_id" => 1, "name" => "base"]);
@@ -106,7 +118,8 @@ M("test.autoload");
 #={"class":"M_Collection","0":{"name":"test.autoload","sdc":"test.autoload","server":""}}
 
 $U=M::Base();
-#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+#={"class":"M_TypedCollection","0":{"type":{"name_alias":["alias","name"],"name-alias":["alias","name"],"_id":"int"},"name":"test.base","sdc":"test.base","server":""}}
+
 $U->insert(["_id" => 100, "name" => "Parf", "test" => "yes", "wol" => 0.1, "x" => ["y" => "xy"]]);
 #=100
 $U->create(["_id" => 101, "name" => "Ted", "test" => "yes"]);
@@ -165,7 +178,8 @@ count($U[100]);
 #=5
 
 $U;
-#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+#={"class":"M_TypedCollection","0":{"type":{"name_alias":["alias","name"],"name-alias":["alias","name"],"_id":"int"},"name":"test.base","sdc":"test.base","server":""}}
+
 
 $U[1];
 #={"_id":1,"a":["parf","parf","test"],"a1":["one"],"a2":["one",3,3.4],"f":0.5,"i":1,"name":"base"}
@@ -195,6 +209,7 @@ $u101->name;
 
 M::Base(102); // NotFound
 #={"class":"M_Object","0":{"id":102}}
+
 
 M::Base(-102); // Ok
 #={"class":"M_Object","0":{"id":102}}
@@ -248,7 +263,8 @@ $u->get("x y z");
 
 $u->x;
 #=["parf","test"]
-#
+
+
 ### unset($u["x"]);  << no unset in eval !!
 ; $u->_unset("x");
 $u->inc("x");
@@ -290,10 +306,11 @@ $u->get("zz z");
 #={"z":null,"zz":["y"]}
 #
 $u->v();
-#={"D":{"_id":100,"zz":["y"],"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1,"x":3,"y":[1,1,2,1,3]},"id":100,"loaded":{"zz":1,"z":1,"_id":1}}
+#={"D":{"_id":100,"zz":["y"],"y":[1,1,2,1,3],"x":3,"a":{"b":{"c":[1,2,3]}},"name":"Parf","test":"yes","wol":0.1},"id":100,"loaded":{"zz":1,"z":1,"_id":1}}
 
 $u->MC();
-#={"class":"M_Collection","0":{"name":"test.base","sdc":"test.base","server":""}}
+#={"class":"M_TypedCollection","0":{"type":{"name_alias":["alias","name"],"name-alias":["alias","name"],"_id":"int"},"name":"test.base","sdc":"test.base","server":""}}
+
 
 $u->json();
 #="{\"_id\":100,\"a\":{\"b\":{\"c\":[1,2,3]}},\"name\":\"Parf\",\"test\":\"yes\",\"wol\":0.1,\"x\":3,\"y\":[1,1,2,1,3],\"zz\":[\"y\"]}"
@@ -311,21 +328,38 @@ $u->name;
 $u->name_alias = "Alias"; 
 #="Alias"
 $u->name;
-#="Parf"
+#="Alias"
 $u->name_alias;
 #="Alias"
 $u["name-alias"];
-#="Parf"
+#="Alias"
 
 $u->_undefined_magic_field;
-#=["Exception","Typed collection required for magic fields",0]
+#=["DomainException","type required for magic field test.base[100].undefined_magic_field",0]
+
+// SEQUENCE
+; $B = M::Base();
+$b1=$B->insert(["a" => 1]);
+#=102
+
+$b2=$B->insert(["c" => 2]);
+#=103
+
+$B($b1)->_;
+#={"_id":102,"a":1}
+
+$B[$b2];
+#={"_id":103,"c":2}
 
 # ---------------------------------------------------------------------------------
 # Typed collections
 
 ; $T=M::Typed();
 $T->type;
-#={"_id":"int","ai.*":"int","aip.*":"ip","aip.2":"ip","arr":"array","as.*":"string","date":"date","datetime":"DateTime","dt":"datetime","en":["name","age","sex"],"int":"int","ip":"ip","map":{"y":"yksi","ka":"kaksi","ko":"kolme"},"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"aip.1":"ip","aip.2":"ip","arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+
+
+
 
 ; $T->insert( ["_id" => 2, "int" => 1] );
 ; $T->insert( ["_id" => 3, "int" => "a"] );
@@ -381,7 +415,7 @@ $T[1]["as"];
 $T[1]["aip"];
 #=[3232235521,3232235778]
 
-// we can get use of "aip.*:ip" type declaration and get human representation of this field
+// Array of IP - magic representaition
 $T(1)["_aip"];
 #=["192.168.0.1","192.168.1.2"]
 
@@ -405,34 +439,47 @@ $t->_big_fat_int;
 #="123,456"
 
 // ALIAS OF MAGIC FIELD - SET
+
+// assignment to an alias
+; $t->big_fat_int = 1343;
+
+$t->_big_fat_int;
+#="1,343"
+$t->int;
+#=1343
+
+// alias of int assignment
+$t->_int = 1773;
+#=1773
+$t->int;
+#=1773
+
+
+
 ; $t->_big_fat_int = "and the number is 987,000";
 $t->int;
 #=987000
-
-# SEQUENCE
-; $B = M::Base();
-$b1=$B->insert(["a" => 1]);
-#=102
-
-$b2=$B->insert(["c" => 2]);
-#=103
-
-$B($b1)->_;
-#={"_id":102,"a":1}
-
-$B[$b2];
-#={"_id":103,"c":2}
 
 // ENUMS - prederined hashes
 get_class($T);
 #="M_TypedCollection"
 $T->type["en"];
-#=["name","age","sex"]
+#=["enum",["name","age","sex"]]
+
+ M_Object::$debug=1;
+#=1
 ; $t=$T(1);
 $t->en=1;
 #=1
+
+// $t->v();
+
+$t->D("en");
+#=1
+
 $t->en;
 #=1
+
 $t->en=4;
 #=["InvalidArgumentException","bad enum key: 4 type: [ENUM]",0]
 $t->en;
@@ -461,7 +508,8 @@ $t->en=["a"];
 
 # ENUM AS MAP
 $T->type["map"];
-#={"ka":"kaksi","ko":"kolme","y":"yksi"}
+#=["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}]
+
 // you can assign keys or values to enum types
 $t->map="kolme";
 #="kolme"
@@ -538,7 +586,8 @@ $t->u;
 // no exception when saving bad urls to magic field
 ; $t->_u="one two three";
 $t->u;
-#=null
+#=""
+
 $t->_u;
 #=""
 
@@ -619,7 +668,8 @@ $t->_ip;
 #="192.168.1.2"
 
 $t->_non_defined_field;
-#=["Exception","Type required for magic field non_defined_field",0]
+#=["DomainException","type required for magic field test.typed[1].non_defined_field",0]
+
 
 // applying type for deep field
 ; $t["t.ip"] = "abc";
@@ -641,8 +691,11 @@ $t["aip.0"];
 
 // Magic field.{number} syntax is unsupported by type+magic system
 // however you can explicitely define type to "aip.0", then it will work
-$t["_aip.0"];
-#=3232235778
+// $t["_aip.0"];
+// while inefficient - this syntax will work
+$t["_aip"][0];
+#="192.168.1.2"
+
 
 $t->_aip;
 #=["192.168.1.2","192.168.1.2"]
@@ -654,7 +707,9 @@ $t->_aip[0];
 // field.{number} this syntax is unsupported by type system
 ; $t["aip.1"] = '192.168.0.1'; // unsupported unless explicitely defined
 $t["aip.1"];
-#="192.168.0.1"
+#=3232235521
+
+// explicit type defined fo aip.1
 $t["_aip.1"]; // unsupported unless explicitely defined
 #="192.168.0.1"
 ; $t["aip.1"] = M_Type::applyIP('10.0.0.1');
@@ -670,12 +725,17 @@ $t["aip.2"];
 $t["_aip.2"];
 #="192.168.1.1"
 
+$t->D("aip");
+#=[3232235778,167772161,3232235777]
+
 $t->aip;
 #=[3232235778,167772161,3232235777]
 
+
 // ALL FIELDS
 $t->_;
-#={"_id":1,"aaa":{"b":{"c":[1,2,3],"d":[4,5,6]}},"ai":[0,0,1],"aip":[3232235778,167772161,3232235777],"as":["abc","0","1.1"],"date":1337918400,"datetime":1337973872,"en":1,"int":1234567890,"ip":3232235778,"map":"ka","name":"Sergey Parf Script","ph":8675583979813,"str":"<script> alert(\"got u\") <\/script>","t":{"ip":3232235778},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":null}
+#={"_id":1,"aaa":{"b":{"c":[1,2,3],"d":[4,5,6]}},"ai":[0,0,1],"aip":[3232235778,167772161,3232235777],"as":["abc","0","1.1"],"date":1337918400,"datetime":1337973872,"en":1,"int":1234567890,"ip":3232235778,"map":"ka","name":"Sergey Parf Script","ph":8675583979813,"str":"<script> alert(\"got u\") <\/script>","t":{"ip":3232235778},"text":"&lt;script&gt; alert(&quot;got u&quot;) &lt;\\\/script&gt;","u":""}
+
 
 // ALL FIELDS as MAGIC
 $t->__;
@@ -683,8 +743,10 @@ $t->__;
 
 
 // Extending M_Object 
- $C =M::Something();
-#={"class":"M_Collection","0":{"name":"test.something","sdc":"test.something","server":""}}
+; $C =M::Something();
+get_class($C);
+#="M_TypedCollection"
+
 $C->C("class");
 #="M_Something"
 ; $C->remove(['_id' => ['$gt' => 0]]);

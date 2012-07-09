@@ -120,6 +120,11 @@ class M {
         return M::i($sdc);
     }
 
+    // reset all caches !!
+    static function reset() {
+        self::$CACHE=[];
+    }
+
     // Config - C("xxx") wrapper
     static function C($server, $node) {
         if (! $server)

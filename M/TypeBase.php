@@ -31,15 +31,15 @@ class M_TypeBase {
 
     // field type support
     // $v - value, $T - type (not null)
-    PUBLIC static function apply($v, $T) { # value
-        if (is_array($T)) { // $T = "ENUM"
-            if (! is_scalar($v))
-                return static::e("scalar expected", $v, "[ENUM]");
-            if ( ($_ = array_search($v, $T)) !== false)
-                return $_;
-            if (isset($T[$v]))
-                return $v;
-            return static::e("bad enum key: $v", 0, "[ENUM]");
+    PUBLIC static function apply($v, $T) { // $v
+        if (is_array($T)) { // complex type
+            $t = array_shift($T);
+            if (! $t)
+                throw new DomainException("apply: NULL type");
+            $m = ["M_Type", "apply".$t];
+            if ( is_callable($m) )
+                return $m($v, $T);
+            throw new DomainException("apply: unknown type $t");
         }
         $m = ["M_Type", "apply".$T]; // ucfirst(strtolower($T));
         if ( is_callable($m) )
@@ -48,11 +48,13 @@ class M_TypeBase {
     }
 
     // M_Object magic field formatting
-    PUBLIC static function getMagic($v, $T, $exception=true) { # $v
-        if (is_array($T)) {
-            if (! is_scalar($v))
-                return static::e("scalar expected", $v, "getMagic [ENUM]");
-            return isset($T[$v]) ? $T[$v] : null;
+    PUBLIC static function getMagic($v, $T, $exception=true) { // $v
+        if (is_array($T)) { // complex type
+            $t = array_shift($T);
+            $m = ["M_Type", "get_".$t];
+            if ( is_callable($m) )
+                return $m($v, $T);
+            throw new DomainException("get_Magic: unknown type $t");
         }
         $m = ["M_Type", "get_".$T]; // ucfirst(strtolower($T));
         if ( is_callable($m) )
@@ -65,11 +67,11 @@ class M_TypeBase {
     // M_Object magic field set
     PUBLIC static function setMagic($v, $T) { # $v
         if (is_array($T)) {
-            if (! is_scalar($v))
-                return static::e("scalar expected", $v, "setMagic [ENUM]");
-            if ( ($_ = array_search($v, $T)) !== false)
-                return $_;
-            return static::e("bad enum VALUE: $v");
+            $t = array_shift($T);
+            $m = ["M_Type", "set_".$t];
+            if ( is_callable($m) )
+                return $m($v, $T);
+            throw new DomainException("set_Magic: unknown type $t");            
         }
         $m = ["M_Type", "set_".$T]; // ucfirst(strtolower($T));
         if ( is_callable($m) )
@@ -101,9 +103,32 @@ class M_TypeBase {
     static function applyString($v) { return (string)$v; }
     static function applyBool($v)   { return (bool)$v; }
 
-    // no type enforcement, you can query array with scalar
-    static function applyArray($v)  { return $v ? $v : []; }
 
+    // T = ["ENUM", {}]
+    static function applyEnum($v, $p) {
+        if (! is_scalar($v))
+            return static::e("scalar expected", $v, "[ENUM]");
+        $p = $p[0];
+        if ( ($_ = array_search($v, $p)) !== false)
+            return $_;
+        if (isset($p[$v]))
+            return $v;
+        return static::e("bad enum key: $v", 0, "[ENUM]");
+    }
+
+    // T = ["ARRAY", "TYPE"]
+    // no type enforcement, you can query array with scalar
+    // it is OK to query array with scalar !!!
+    static function applyArray($v, $t="")  {
+        if (! $t)
+            return $v ? $v : [];
+        if (! is_array($v))
+            return self::apply($v, $t);
+        // array of $t case
+        foreach ($v as &$_)
+            $_ = self::apply($_, $t);
+        return $v;
+    }
     
     // Anti CSS (cross-site scripting) type - text only
     // all html entities are escaped
@@ -173,8 +198,9 @@ class M_TypeBase {
     // internally stored without 'http://' prefix
     // use magic access "_$url" to auto-add http:// (when needed)
     static function applyURL($v0) {
-        if (! is_string($v0))
+        if (! is_string($v0)) {
             self::e("", $v0, "url");
+        }
         // $v = filter_var($v0, FILTER_SANITIZE_URL);
         // ^^^ sanitize is stupid
         $v = trim($v0);
@@ -227,12 +253,29 @@ class M_TypeBase {
     }
 
     // --------------------------------------------------------------------------------
-    // getMagic
+    // getMagic - human readable representation of a type
     //
 
+    // T = ["ENUM", $p]
+    static function get_ENUM($v, $p) {
+        if (! is_scalar($v))
+            return static::e("scalar expected", $v, "get_Magic [ENUM]");
+        $T = $p[0];
+        return isset($T[$v]) ? $T[$v] : null;
+    }
 
-    static function get_Array($v) { // json
-        return json_encode((array)$v);
+    // ARRAY OF type $T[0]
+    // or just an array
+    static function get_Array($v, $T=false) { //
+        if ($T === false) {
+            // static::e("no type defined, no magic for untyped arrays");
+            return $v;
+        }
+        // array of $t case
+        $r = [];
+        foreach ($v as $_)
+            $r[] = self::getMagic($_, $T[0]);
+        return $r;
     }
 
     static function get_Int($v) { // 99,999,999
@@ -359,6 +402,16 @@ class M_TypeBase {
     // getMagic
     // we highly discouraging you to repeat apply$Type
     // provide set_ methods only when they are different from apply$Type
+
+    // complex type: ["ENUM", {db => expanded}]
+    static function set_ENUM($v, $T) {
+        $t = $T[0];
+        if (! is_scalar($v))
+            return static::e("scalar expected", $v, "set_ENUM");
+        if ( ($_ = array_search($v, $t)) !== false)
+                return $_;
+        return static::e("bad enum VALUE: $v");
+    }
 
     static function set_IP($v) {
         return ip2long($v);
