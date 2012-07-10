@@ -588,7 +588,7 @@ class M_Collection implements ArrayAccess {
     // we do not want to add checks to insert (slow it down)
     // example:
     //   M("test.test")->dotInsert( ["a.b" => 1, "a.c.e" => 2] )
-    function dotInsert(array $data, array $options=[]) { # ID
+    function dotInsert(array $data, array $options=[]) { // ID
         $r=[];
         foreach($data as $k => $d) {
             if (!strpos($k, ".")) {
@@ -715,6 +715,7 @@ class M_Collection implements ArrayAccess {
 
     // basic query rewriting
     // rewrite scalar queries requests to ["_id" => (int) $q]
+    // see TypedCollection for more complex version
     function _query($q) { # q
         if (! is_array($q))
             return ["_id" => (int)$q];
@@ -722,7 +723,7 @@ class M_Collection implements ArrayAccess {
     }
 
     // only for typed collections
-    // aliases + magic fields + applyTypes + more
+    // aliases + magic fields + types + more
     /* internal */ function _kv(array $kv) { // $kv
         return $kv;
     }
@@ -735,10 +736,6 @@ class M_Collection implements ArrayAccess {
         if (! is_array($fields))
             $fields = explode(" ", $fields);
         return $fields;
-    }
-
-    function applyTypes(array $kv) {
-        return $kv;
     }
 
     // proxy calls to MongoCollection or to static methods in M_Object(or class that extends it)

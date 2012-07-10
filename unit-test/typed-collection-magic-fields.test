@@ -40,5 +40,52 @@ $T->fm([], []);
 
 // 2. you should query something magic
 $T->fm([], "ph");
-#=["InvalidArgumentException","no magic fields in queried",0]
+#=["InvalidArgumentException","no aliases or magic fields in query",0]
 
+// type expansion in finder
+$T->f(['ph' => "7495726-0000"]);
+#={"2":{"_id":2,"ph":74957260000}}
+
+// receive magic field in result
+$T->fm(['ph' => "7495726-0000"], "_ph");
+#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000"}}
+
+// alias expansion in finder
+$T->type["phone"];
+#=["alias","ph"]
+
+// internal alias expansion logic (+type resolving)
+$T->_query(["phone" => "7495726-0000"]);
+#={"ph":74957260000}
+
+// find BY alias
+$T->f(['phone' => "7495726-0000"]);
+#={"2":{"_id":2,"ph":74957260000}}
+
+
+// FIND - aliases, magic fields in result field lists
+// logic: you always get what are you looking for
+//        you will get original fields also
+// for alias - you'll also get referred field
+// for magic field - you'll get non-magic field
+
+// alias in result list
+$T->fm(['phone' => "7495726-0000"], "phone");
+#={"2":{"_id":2,"ph":74957260000,"phone":74957260000}}
+
+// magic field in result list
+$T->fm(['phone' => "7495726-0000"], "_ph");
+#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000"}}
+
+// magic of alias in result list
+$T->fm(['phone' => "7495726-0000"], "_phone");
+#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","_phone":"+7 495-726-0000"}}
+
+// magic field and alias in result list
+// combo of above, because of alias thereis no original "ph" field
+$T->fm(['phone' => "7495726-0000"], "phone _ph");
+#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","phone":74957260000}}
+#
+// magic of alias + alias
+$T->fm(['phone' => "7495726-0000"], "phone _phone");
+#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","phone":74957260000,"_phone":"+7 495-726-0000"}}

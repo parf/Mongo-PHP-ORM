@@ -154,5 +154,6 @@ $C(4)->_;
 $C(4)->__;
 #={"_id":"4","age":"80","p":"+7 495-726-4601"}
 
-
-
+// we check finders too !!
+$C->find(["xxx" => "y"]);
+#=["DomainException","unknown field: test.strict.xxx",0]

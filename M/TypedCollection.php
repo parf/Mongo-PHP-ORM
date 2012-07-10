@@ -20,80 +20,53 @@ final class M_TypedCollection extends M_Collection {
         parent::__construct($server, $sdc);
     }
 
-    // find with Magic Fields Support ($fields)
-    // "_alias" syntax is not supported
+    // find with Magic Fields Support and clever Aliases in ($fields)
+    
     // result will have all original find fields and all magic fields
     function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields }}
         if (! is_string($fields))
             throw new InvalidArgumentException("field list must be string");
 
         $fields = explode(" ", $fields);
-        $mf = []; // magic fields
+        $mf = [];    // magic fields
+        $copy = [];  // aliases
         foreach($fields as & $f) {
-            if ($f[0]!='_')
-                continue;
             if ($f=='_id')
                 continue;
+            $t = @$this->type[$f];
+            if ($t && is_array($t) && $t[0]=='alias') { // ALIASES
+                $copy[$t[1]] = $f;
+                $f = $t[1];
+                continue;
+            }
+            if ($f[0]!='_')
+                continue;
+            // MAGIC FIELD
             $f = substr($f, 1);
-            $mf[$f] = $this->type[$f];
+            $t = $this->type[$f];
+            if (is_array($t) && $t[0]=='alias') { // ALIASES
+                $copy["_".$t[1]] = "_".$f; 
+                $f = $t[1];
+                $t = $this->type[$f];
+            }
+            $mf[$f] = $t;
         }
-        if (! $mf)
-            throw new InvalidArgumentException("no magic fields in queried");
+        if (! $mf && ! $copy)
+            throw new InvalidArgumentException("no aliases or magic fields in query");
 
         $z = $this->f($q, $fields); // result
         foreach($z as &$r) {
-            foreach($mf as $f => $T)
+            foreach($mf as $f => $t)
                 if (isset($r[$f]))
-                    $r["_".$f] = M_Type::getMagic($r[$f], $T);
+                    $r["_".$f] = M_Type::getMagic($r[$f], $t);
+            foreach($copy as $from => $to) {
+                if (isset($r[$from])) {
+                    $r[$to]=$r[$from];
+                    // unset($r[$from]); 
+                }
+            }
         }
         return $z;
-    }
-
-    // insert, $set
-    // array type enforced
-    function applyTypes(array $kv, $obj=null) {  # $kv
-        $t = $this->type;
-        $rename = [];
-        foreach($kv as $k => &$v) {
-            if ($k[0]=='_') { // magic field save
-                if ($k == '_id') {
-                    $v = (int) $v;
-                    continue;
-                }
-                $f = substr($k, 1);
-                $rename[$k] = $f;
-                $T = $t[$f];
-                if (! $T)
-                    throw new InvalidArgumentException("Type required for magic field $f");
-                $v = M_Type::setMagic($v, $T);
-                continue;
-            }
-            if (! isset($t[$k]))
-                continue;
-            $T = $t[$k];
-            if ($obj && is_array($T) && $T[0]=='method') {
-                $m = [$obj, "set$k"];
-                if (is_callable($m))
-                    $v = $m($v);
-                continue;
-            }
-            if (is_array($T) && $T[0]=='alias') {
-                $rename[$k]  = $T[1];
-                $T = @$t[$T[1]];
-                if (! $T)
-                    continue;
-            }
-
-            $v = M_Type::apply($v, $T);
-            $want_array = ($T=='array' || (is_array($T) && $T[0]=='array')); // typed or untyped array
-            if ($want_array && ! is_array($v))
-                throw new InvalidArgumentException("trying to set scalar to array element. key: '$k'");
-        }
-        foreach ($rename as $from => $to) {
-            $kv[$to] = $kv[$from];
-            unset($kv[$from]);
-        }
-        return $kv;
     }
 
     // apply types for queries
@@ -103,6 +76,8 @@ final class M_TypedCollection extends M_Collection {
             return ["_id" => (int)$kv];
 
         static $logic = array('$or'=>1, '$and'=>1, '$nor' =>1);
+        
+        $strict = $this->C("strict");
 
         // kv is an array
         $rename = [];
@@ -111,30 +86,33 @@ final class M_TypedCollection extends M_Collection {
             // $or, $and, $nor
             if ($k[0] == '$') { // $and $or $nor
                 if (! $logic[$k])
-                    Log::alert("unknown operation: $k");
+                    throw new RuntimeException("$this unknown operation: $k");
                 if (! is_array($v))
-                    Log::alert("operator $k: array expected");
+                    throw new RuntimeException("$this operator $k: array expected");
                 foreach($v as &$t)
                     $t=$this->_query($t);
                 continue;
             }
-            $T = isset($this->type[$k]) ? $this->type[$k] : 0;
-            if (! $T)
+            $t = @$this->type[$k];
+            if (! $t) {
+                if ($strict)
+                    throw new DomainException("unknown field: $this.$k");
                 continue;
+            }
 
-            if (is_array($T) && $T[0]=='alias') {
-                $rename[$k] = $T[1];
-                $k = $T[1];
-                $T = isset($this->type[$k]) ? $this->type[$k] : 0;
-                if (! $T)
+            if (is_array($t) && $t[0]=='alias') {
+                $rename[$k] = $t[1];
+                $k = $t[1];
+                $t = @$this->type[$k];
+                if (! $t)
                     continue;
             }
 
             if (is_array($v)) {
-                $v = $this->applyTypeQuery($v, $T);
+                $v = $this->applyTypeQuery($v, $t);
                 continue;
             }
-            $v = M_Type::apply($v, $T);
+            $v = M_Type::apply($v, $t);
         }
 
         if ($rename) {
@@ -184,7 +162,7 @@ final class M_TypedCollection extends M_Collection {
             return $v;
         $k=$ops[$op];
         if ($k==1)    // $inc, $set
-            return $this->applyTypes($v);
+            return $this->_kv($v);
         if ($k==2) {  // apply ARRAY of $T
             foreach($v as $k => &$_) {
                 $T = @$this->type[$k];
@@ -225,7 +203,7 @@ final class M_TypedCollection extends M_Collection {
 
     // insert that honors "node.field" notation
     function dotInsert(array $data, array $options=[]) { // ID
-        return parent::dotInsert( $this->applyTypes($data) );
+        return parent::dotInsert( $this->_kv($data) );
     }
 
     // smart addToSet

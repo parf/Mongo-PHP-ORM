@@ -356,7 +356,7 @@ $B[$b2];
 
 ; $T=M::Typed();
 $T->type;
-#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"aip.1":"ip","aip.2":"ip","arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"aip.1":"ip","aip.2":"ip","arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","phone":["alias","ph"],"str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
 
 
 

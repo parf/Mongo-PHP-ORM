@@ -87,6 +87,7 @@ m2:
         date:        date
         datetime:    DateTime
         ph:          phone
+        phone:       ["alias", "ph"]
         ip:          ip
         usd:         price
         dt:          datetime
