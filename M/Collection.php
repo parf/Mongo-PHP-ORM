@@ -721,11 +721,8 @@ class M_Collection implements ArrayAccess {
         return $q;
     }
 
-    /* internal */ function _kv_aliases(array $kv) { // $kv
-        return $kv;
-    }
-
-    // _kv_aliases + applyTypes + more
+    // only for typed collections
+    // aliases + magic fields + applyTypes + more
     /* internal */ function _kv(array $kv) { // $kv
         return $kv;
     }

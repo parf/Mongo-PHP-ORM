@@ -104,7 +104,6 @@ final class M_TypedCollection extends M_Collection {
 
         static $logic = array('$or'=>1, '$and'=>1, '$nor' =>1);
 
-        // $kv = $this->_kv_aliases($kv); - simplified version integrated
         // kv is an array
         $rename = [];
         foreach($kv as $k => &$v) {
@@ -217,13 +216,7 @@ final class M_TypedCollection extends M_Collection {
     }
 
     function insert(array $data, array $options=[]) { // ID
-        $data = $this->_kv_aliases($data);
-        $data = $this->applyTypes($data);
-        if ($this->C("strict")) {
-            foreach($data as $k => $v)
-                if (! @$this->type[$k])
-                    throw new DomainException("unknown field $this.$k");
-        }
+        $data = $this->_kv($data);
         if (! isset($data["_id"]))
             $data["_id"]=self::next();
         $this->MC->insert($data, $options);
@@ -287,52 +280,11 @@ final class M_TypedCollection extends M_Collection {
     // -------------------------------------------------------------------------------------
     // 2.1 =================================================================================
 
-    // support for aliases in {KEY => QUERY} data
-    // magic field aliases are supported as well
-    //
-    // used for:
-    //   finders
-    //   insert
-    //   update ops (set, inc, addToSet, ...)
-    //
-    // not used in generic update ??? why???
-    /* internal */ function _kv_aliases(array $kv) { // $kv
-        $T = $this->type;
-        $rename = [];
-        foreach ($kv as $f => $v) {
-            if ($f[0]=='_' && $f!='_id') { // magic field
-                // magic field or alias
-                $f2 = substr($f, 1);
-                $t=@$T[$f2];
-                if (! $t)
-                    throw new DomainException("type required for magic field ".$this.".$f2");
-
-                if (is_array($t) && $t[0]=='alias')
-                    $rename[$f] = "_".$t[1];
-                continue;
-            }
-
-            if (! isset($T[$f]))
-                continue;
-
-            $t = $T[$f];
-            if (is_array($t) && $t[0]=='alias')
-                $rename[$f] = $t[1];
-        }
-        if (! $rename)
-            return $kv;
-        foreach ($rename as $from => $to) {
-            $kv[$to] = $kv[$from];
-            unset($kv[$from]);
-        }
-        return $kv;
-    }
-
     // INSERT / SET / $OP
     // all-in-one key=>value type support
     // 1. resolve aliases
     // 2. apply types
-    // 3. magic fields (_magic = 'value' resolved via M_Type::setMagic)
+    // 3. resolve magic fields (_magic = 'value' resolved via M_Type::setMagic)
     // 4. strict field check (when needed) (only defined fields allowed)
     // 5. resolve method field (M_Object based)
     function _kv(array $kv, $obj=null, $array_assign_check=false) { // $kv
