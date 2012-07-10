@@ -402,9 +402,48 @@ class M_Collection implements ArrayAccess {
 
     // Sequences
     // * tracking collection "sequence" located in the same db as collection
-    function next($inc=1) { // next id
-        return M_Sequence::next($this->name, $inc, true); // autocreate
+    function next($inc=1) { //
+        $buffer=$this->C("insert-buffer");
+        if (! $buffer)
+            return M_Sequence::next($this->name, $inc, true); // autocreate
+        if ($inc>1) {
+            // even we can - we'll not - you should use one approach only
+            throw new RuntimeException("can't mix insert-buffer and inc!=1");
+        }
+        return $this->buffered_next($buffer);
     }
+    
+    // APC based sequence caching
+    // buffer - number of IDs to buffer
+    // will perform one mongo request per $buffer queries
+    protected function buffered_next($buffer) {
+        $KEY = "insert-buffer".$this->sdc;
+        $c = apc_dec($KEY."-");
+        $v = apc_fetch($KEY);
+        if ($c === -1 || $c === false) {
+            $v = M_Sequence::next($this->name, $buffer, true);
+            apc_store($KEY, $v);
+            apc_store($KEY."-", $buffer-1);
+            $c = $buffer-1;
+        }
+        if ($c < -1) { // concurrency conflict
+            $w = 10;
+            $ok = 0;
+            foreach(range(1, 14) as $r) {
+                usleep($w);
+                $c = apc_dec($KEY."-");
+                if ($c >= 0) {
+                    $ok = 1;
+                    break;
+                }
+                $w <<= 1;
+            }
+            // fallback to original method if can't solve it right way
+            if (! $ok)
+                return M_Sequence::next($this->name, 1, true);
+        }
+        return $v-$c;
+    }    
 
     function lastId() { # get last id from collection
         $r=$this->f([":sort" => "-_id", ":limit" => 1], "_id");
@@ -541,8 +580,6 @@ class M_Collection implements ArrayAccess {
     function insert(array $data, array $options=[]) { # ID
         if (! isset($data["_id"]))
             $data["_id"]=self::next();
-        if ($fa = $this->C("field-alias"))
-            $data = $this->_kv_aliases($fa, $data);
         $this->MC->insert($data, $options);
         return $data["_id"];
     }
@@ -579,6 +616,7 @@ class M_Collection implements ArrayAccess {
     }
 
     // remove all data, keep indexes, reset sequences
+    // keeps indexes in place
     function reset() {
         $this->remove([]);
         M_Sequence::reset("".$this);
