@@ -23,7 +23,7 @@ final class M_TypedCollection extends M_Collection {
     // find with Magic Fields Support and clever Aliases in ($fields)
     
     // result will have all original find fields and all magic fields
-    function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields }}
+    function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields, aliases }}
         if (! is_string($fields))
             throw new InvalidArgumentException("field list must be string");
 
