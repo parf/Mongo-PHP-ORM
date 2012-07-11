@@ -307,6 +307,24 @@ final class M_TypedCollection extends M_Collection {
             }
 
             if (! $t) { // untyped
+                // node.INDEX (node.123) support
+                if ($p=strrpos($f, '.')) {
+                    if (is_numeric(substr($f, $p+1))) {
+                        $t=@$T[ substr($f, 0, $p) ];
+                        // looking for array of $type
+                        if ($t && is_array($t)) {
+                            if ($t[0]=='alias') {
+                                $rename[$f] = $t[1].".".substr($f, $p+1);
+                                $t=@$T[ $t[1] ];
+                            }
+                            if ($t[0]=='array') {
+                                $v = M_Type::apply($v, $t[1]);
+                                continue;
+                            }
+                            throw new DomainException("array type expected for $this.$f");
+                        }
+                    }
+                }
                 if ($strict)
                     throw new DomainException("unknown field $this.$f");
                 continue;

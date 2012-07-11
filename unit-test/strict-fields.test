@@ -17,7 +17,7 @@ M::reset();
 
 // FIELDS
 $C->C("field");
-#={"age":"int","c":["array","phone"],"cell":["alias","c"],"f":["array","phone"],"fax":["alias","f"],"map":["enum",["one","two","three"]],"n":"string","name":["alias","n"],"p":"phone","phone":["alias","p"]}
+#={"age":"int","c":["array","phone"],"cell":["alias","c"],"f":["array","phone"],"fax":["alias","f"],"map":["enum",["one","two","three"]],"n":"string","name":["alias","n"],"p":"phone","person.email":"email","person.name":"string","phone":["alias","p"]}
 
 
 ; $C->reset(); // remove all, reset sequence
@@ -58,8 +58,7 @@ $c->unknown_field;
 
 
 //array of typed elements (via alias)
-$c->cell = ['(214) 222 2222'];
-#=["(214) 222 2222"]
+; $c->cell = ['(214) 222 2222'];
 
 // alias access (array of case)
 $c->cell;
@@ -75,35 +74,43 @@ $c->_c;
 $c->_cell;
 #=["(215)222-2222"]
 
-// Avoid using this kind of access - use add, push, pull
-// THIS IS AN ERROR !!
+// index access
 $c["c.0"] = '(214) 333-44-55';
-#=["DomainException","unknown field test.strict.c.0",0]
-
-
+#="(214) 333-44-55"
 
 $C[1];
-#={"_id":1,"age":10,"c":[12152222222],"map":0,"n":"test"}
-
+#={"_id":1,"age":10,"c":[12143334455],"map":0,"n":"test"}
 
 $c->c;
-#=[12152222222]
+#=[12143334455]
 
+$c["_c.0"];
+#="(214)333-4455"
 
+// alias.index
+$c["cell.0"];
+#=12143334455
 
 // This is a right way to work with array fields
 ; $c->add("f", "617 345 4444");
 ; $c->add("f", "7 495 726 0000");
 
-// $c['f.1'] = '222.335-4755';
-
-
-$c->fax;
+$c->f;
 #=[16173454444,74957260000]
 
+$c['f.1'] = '222.335-4755';
+#="222.335-4755"
+
+$c->fax;
+#=[16173454444,12223354755]
+
+; $c['fax.1'] = '49 495 626-0000';
+
+$c->fax;
+#=[16173454444,494956260000]
 
 $c->_fax;
-#=["(617)345-4444","+7 495-726-0000"]
+#=["(617)345-4444","+49 495-626-0000"]
 
 
 // field alias

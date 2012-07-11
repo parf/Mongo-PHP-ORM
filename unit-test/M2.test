@@ -356,8 +356,7 @@ $B[$b2];
 
 ; $T=M::Typed();
 $T->type;
-#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"aip.1":"ip","aip.2":"ip","arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","phone":["alias","ph"],"str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
-
+#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","phone":["alias","ph"],"str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
 
 
 
@@ -683,7 +682,6 @@ $t["t.ip"];
 $t["_t.ip"];
 #="192.168.1.2"
 
-
 // deep magic arrays field
 ; $t["aip.0"] = 3232235778;
 $t["aip.0"];
@@ -696,6 +694,9 @@ $t["aip.0"];
 $t["_aip"][0];
 #="192.168.1.2"
 
+// node.index notation
+$t["_aip.0"];
+#="192.168.1.2"
 
 $t->_aip;
 #=["192.168.1.2","192.168.1.2"]
@@ -705,13 +706,11 @@ $t->_aip[0];
 #="192.168.1.2"
 
 // field.{number} this syntax is unsupported by type system
-; $t["aip.1"] = '192.168.0.1'; // unsupported unless explicitely defined
-$t["aip.1"];
-#=3232235521
+// ; $t["aip.1"] = '192.168.0.1'; // unsupported unless explicitely defined
+// $t["aip.1"];
+// #=3232235521
 
-// explicit type defined fo aip.1
-$t["_aip.1"]; // unsupported unless explicitely defined
-#="192.168.0.1"
+
 ; $t["aip.1"] = M_Type::applyIP('10.0.0.1');
 $t["aip.1"];
 #=167772161

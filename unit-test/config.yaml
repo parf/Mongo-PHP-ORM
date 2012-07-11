@@ -77,8 +77,6 @@ m2:
         ai:          ["array", "int"]
         as:          ["array", "string"]
         aip:         ["array", "ip"]
-        aip.1:       ip
-        aip.2:       ip
         # ENUM types
         # same as:
         # en         ["enum", {0:"name", 1:"age", 2:"sex"}]
@@ -112,6 +110,8 @@ m2:
         age:   int
         f:     ["array", "phone"]
         c:     ["array", "phone"]
+        person.name: string
+        person.email: email
 
 # alternative server connection
 m2-server2:

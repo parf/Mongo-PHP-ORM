@@ -192,10 +192,11 @@ class M_Object implements ArrayAccess {
         $this->D = [];
     }
 
+    // save data to DB
+    // support types, aliases, magic fields, method-fields, deep fields, ...
     function set(array $kv) {  // this
         $kv = $this->MC->_kv($kv, $this, true);
         Profiler::in_off("M:set", ["".$this, $kv]);
-        // $this->dbg($kv);
         $this->MC->MC()->update(["_id" => $this->id], ['$set' => $kv]);
         Profiler::out();
         // take care of cached data
@@ -412,10 +413,16 @@ class M_Object implements ArrayAccess {
     // INTERNAL
     //
 
-    private function _g($field, $default=null) {
-        if (! isset($this->D[$field]))
-            $this->load($field);
-        return isset($this->D[$field]) ? $this->D[$field] : $default;
+    // check if data already loaded, load it if needed
+    private function _g($field, $default=null) { // value
+        if (array_key_exists($field, $this->D))
+            return $this->D[$field];
+        if ($this->loaded === true || (is_array($this->loaded) && isset($this->loaded[$field])))
+            return $default;
+        $loaded = $this->_load($field);
+        if (array_key_exists($field, $loaded))
+            return $loaded[$field];
+        return $default;
     }
 
     // get does not change existing field types
@@ -454,6 +461,11 @@ class M_Object implements ArrayAccess {
         if (! isset($this->D[$p[0]]))
             $this->load($p[0]);
         $r = & $this->D;
+
+        if ($t = @$this->MC->type[$p[0]])
+            if (is_array($t) && $t[0]=='alias')
+                $p[0]=$t[1];
+
         foreach($p as $k) {
             if (! isset($r[$k]))
                 return null;
@@ -474,21 +486,32 @@ class M_Object implements ArrayAccess {
         if ($field == '_') // magic field representation (when possible)
             return $this->MC->allMagic($this->D); // typed collection expected
 
-        $T = @$this->MC->type[$field];
-        if ($T && is_array($T) && $T[0]=='alias') {
-            $field = $T[1];
-            $T = @$this->MC->type[$field];
+        $t = @$this->MC->type[$field];
+        if ($t && is_array($t) && $t[0]=='alias') {
+            $field = $t[1];
+            $t = @$this->MC->type[$field];
         }
-        if (! $T) {
+        if (! $t) {
+            $dot = strrpos($field, ".");
+
+            // node.INDEX (node.123) support
+            if ($dot && is_numeric(substr($field, $dot+1))) {
+                $t=@$this->MC->type[ substr($field, 0, $dot) ];
+                // get type from ["array", $type]
+                if ($t && is_array($t) && $t[0]=='array')
+                    return M_Type::getMagic($this->__get_deep($field), $t[1]);
+            }
+            
             if ($exception)
                 throw new DomainException("type required for magic field $this.$field");
-            if (strpos($field, "."))
+
+            if ($dot)
                 return $this->__get_deep($field);
             return $this->_g($field);
         }
 
         if (! isset($this->D[$field])) {
-            if (strpos($field, ".")) {
+            if ($p=strpos($field, ".")) {
                 $v = $this->__get_deep($field);
             } else {
                 $this->load($field);
@@ -497,7 +520,7 @@ class M_Object implements ArrayAccess {
         } else {
             $v = $this->D[$field];
         }
-        return M_Type::getMagic($v, $T);
+        return M_Type::getMagic($v, $t);
     }
 
     // PRECEDENCE:
@@ -506,19 +529,20 @@ class M_Object implements ArrayAccess {
     function __get($field) {
         $T = $this->MC->C("field.$field");
 
-        // alias, relation, method, etc ...
+        // complex type: alias, relation, method, ...
         if (is_array($T)) {
             if ($T[0]=='alias')
                 return $this->__get($T[1]);
             return $this->_get($field, $T);
         }
 
+        // strict collection, known field check
         if (! $T && $this->MC->C("strict") && $field[0]!='_')
             throw new DomainException("unknown field $this.$field");
 
-        if ( isset($this->D[$field]) )
+        if (isset($this->D[$field]))
             return $this->D[$field];
-
+        
         // Magic Field
         if ($field[0]=='_')
             return $this->__get_magic(substr($field, 1));
@@ -582,7 +606,7 @@ class M_Object implements ArrayAccess {
 
     // M::Col($id)["node.node.field"] = "value";
     function offsetSet($field, $value) {
-        $this->save([$field => $value]);
+        $this->set([$field => $value]);
     }
 
     // unset( $m_object["node.field"] )

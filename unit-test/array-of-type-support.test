@@ -32,9 +32,9 @@ $t->{"aip.1"};
 #=3232235778
 
 
-// We do not want to support this notation - magic field + numeric index
+// aip is array of type
 $t["_aip.0"];
-#=["DomainException","type required for magic field test.typed[1000].aip.0",0]
+#="192.168.0.1"
 
 // !! UNLESS it is exlplicitely defined !!
 $t["_aip.1"];
