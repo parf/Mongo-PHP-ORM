@@ -556,7 +556,6 @@ class M_Collection implements ArrayAccess {
             }
             $mc=$mc->sort($sort);
         }
-
         if ($pager)
             $pager->total($mc->count());
         if ($skip)
