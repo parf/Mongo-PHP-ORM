@@ -94,10 +94,10 @@ class M_Helper {
         $M=M($mongo_collection);
         $M->remove( array() );
         if (! $pk) {
-            if (Sequence::last($mongo_collection))
-                Sequence::reset($mongo_collection);
+            if (M_Sequence::last($mongo_collection))
+                M_Sequence::reset($mongo_collection);
             else
-                Sequence::create($mongo_collection);
+                M_Sequence::create($mongo_collection);
         }
 
         $i=0;
@@ -114,9 +114,10 @@ class M_Helper {
                 $row["_id"] = $row[$pk];
                 unset($row[$pk]);
             } else {
-                if (! $ids)
-                    $ids = Sequence::next($mongo_collection, 100);
-                $id=array_shift($ids);
+
+                //if (! $ids)
+                    $id = M_Sequence::next($mongo_collection);
+//                $id=array_shift($ids);
                 $row["_id"] = $id;
             }
             if ($processor)
