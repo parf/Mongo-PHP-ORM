@@ -1,0 +1,83 @@
+#!/bin/env spartan-test
+
+// APC caching of ID (autoincrement)
+// faster sequences for mass insert operations
+// boring test
+
+; M_Sequence::reset("test.test");
+; $m=M("test.test");
+
+$m->next();
+#=1
+$m->next();
+#=2
+$m->next();
+#=3
+
+// one mongo request per 10 accesses
+// in real life - just configure it in config.yaml: "insert-buffer: 10"
+; $m->C_set("insert-buffer", 10);
+
+$m->next();
+#=4
+$m->next();
+#=5
+$m->next();
+#=6
+$m->next();
+#=7
+$m->next();
+#=8
+$m->next();
+#=9
+$m->next();
+#=10
+$m->next();
+#=11
+$m->next();
+#=12
+$m->next();
+#=13
+$m->next();
+#=14
+
+// you can modify insert buffer at run-time
+; $m->C_set("insert-buffer", 3);
+$m->next();
+#=15
+$m->next();
+#=16
+
+// and even turn it off
+// you'll skip unused buffered data this way
+; $m->C_set("insert-buffer", 0);
+$m->next();
+#=24
+$m->next();
+#=25
+
+// will reuse old data
+; $m->C_set("insert-buffer", 3);
+$m->next();
+#=17
+$m->next();
+#=18
+$m->next();
+#=19
+$m->next();
+#=20
+$m->next();
+#=21
+$m->next();
+#=22
+$m->next();
+#=23
+
+// 24 and 25 were already used !!!
+
+$m->next();
+#=26
+$m->next();
+#=27
+$m->next();
+#=28
