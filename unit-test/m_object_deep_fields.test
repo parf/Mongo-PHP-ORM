@@ -1,0 +1,57 @@
+#!/bin/env spartan-test
+<?
+
+// Deep fields access and typing
+M::reset();
+#=null
+
+; $T = M::Typed();  // typed collection
+; $T->reset();      // drop all data, reset sequence
+$T->type;
+#={"_id":"int","ai":["array","int"],"aip":["array","ip"],"arr":"array","array_of_ip":["alias","aip"],"as":["array","string"],"big_fat_int":["alias","int"],"date":"date","datetime":"DateTime","dt":"datetime","en":["enum",["name","age","sex"]],"int":"int","ip":"ip","map":["enum",{"y":"yksi","ka":"kaksi","ko":"kolme"}],"name":"name","ph":"phone","phone":["alias","ph"],"str":"string","t.a":"array","t.b":"bool","t.d":"date","t.f":"float","t.i":"int","t.ip":"ip","t.s":"string","text":"text","u":"url","usd":"price"}
+
+
+// prepare data
+; $T->dotInsert(["_id" =>1, "t.d" => 1340903553 /*time*/, "t.ip" => 167772264, "x.y" => "z", ]);
+; $t=$T(1);
+
+// all fields
+$t->_;
+#={"_id":1,"t":{"d":1340856000,"ip":167772264},"x":{"y":"z"}}
+
+// all magic
+$t->__;
+#={"_id":"1","t":{"d":"Jun 28, 2012","ip":"10.0.0.104"},"x":{"y":"z"}}
+
+$t->{"t.d"};
+#=1340856000
+
+$t["t.d"];
+#=1340856000
+
+$t["_t.d"];
+#="Jun 28, 2012"
+
+
+# node.INDEX notation
+
+; $t->add("ai", 1.1, "2", (float)3, "4", 1234);
+$t->ai;
+#=[1,2,3,4,1234]
+
+$t["ai.0"];
+#=1
+
+$t["ai.4"];
+#=1234
+
+$t["_ai"][4];
+#="1,234"
+$t["_ai.4"];
+#="1,234"
+
+$t["ai.2"] = "4321";
+#="4321"
+
+$t["ai"];
+#=[1,2,4321,4,1234]
