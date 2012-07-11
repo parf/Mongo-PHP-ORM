@@ -18,7 +18,7 @@ class M_Sequence {
      * @param int $inc
      * @param bool $autocreate
      */
-    static function next($name, $inc=1, $autocreate=false) { # id || ids
+    static function next($name, $inc=1, $autocreate=false) { # id
         $db = self::MC($name)->db; // just get db
         $r  = $db->command(['findAndModify' => 'sequence',
                             'query'  => ['_id' => (string) $name],
@@ -27,9 +27,7 @@ class M_Sequence {
                             ]);
         if ($r["ok"]==1 && $r["value"]!==NULL) {
             $v = $r["value"]["val"];
-            if ($inc==1)
-                return $v;
-            return range($v-$inc+1,$v);
+            return $v;
         }
         if ( ($r["value"]===NULL || $r["errmsg"]=='No matching object found') && $autocreate) {
             self::create($name);

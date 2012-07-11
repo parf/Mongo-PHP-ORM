@@ -67,7 +67,7 @@ See also:
 
 class M_Collection implements ArrayAccess {
 
-    const VERSION=2.1;
+    const VERSION=2.2;
 
     public $name;       // db.col
     public $sdc;        // server:db.col | db.col
@@ -474,7 +474,9 @@ class M_Collection implements ArrayAccess {
         $_=["distinct" => $this->getName(), "key" => $key];
         if ($query)
             $_["query"]=$query;
-        $r=$this->db->command($_);
+
+            $r = $this->MC->db->command($_);
+
         if ($raw)
             return $r;
         return $r["values"];
@@ -552,7 +554,6 @@ class M_Collection implements ArrayAccess {
             }
             $mc=$mc->sort($sort);
         }
-
         if ($pager)
             $pager->total($mc->count());
         if ($skip)
