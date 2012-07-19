@@ -271,7 +271,10 @@ final class M_TypedCollection extends M_Collection {
         $rename = [];
         foreach ($kv as $f => &$v) {
             if ($f=='_id') {
-                $v = (int) $v;
+                if (! isset($T[$f]))
+                    $v = (int) $v;
+                else
+                    $v = M_Type::apply($v, $T[$f]);
                 continue;
             }
             if ($f[0]=='_') { // MAGIC field or alias
