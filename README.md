@@ -1,4 +1,4 @@
-# Mongo-PHP-ORM (M2)
+# Mongo-PHP-ORM (M2.1)
 
     Mongo wrapper and ORM extension for PHP
     M2 is a part of propitiatory Homebase framework
