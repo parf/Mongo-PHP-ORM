@@ -1,0 +1,21 @@
+#!/bin/env spartan-test
+
+// NON int _id test
+// not sure why do u need it
+
+; $C=M("test.non-int-id");
+$C->type;
+#={"_id":"string"}
+
+$C->insert(["_id" => "test", "a" => 147]);
+#="test"
+
+// you can search by id
+$C->f(["_id" => "test"]);
+#={"test":{"_id":"test","a":147}}
+
+// you can't use this !!
+$C->f("test");
+#=[]
+
+// you can't use M_Object with non numberic ids

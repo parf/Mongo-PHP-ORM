@@ -113,6 +113,11 @@ m2:
         person.name: string
         person.email: email
 
+    # non integer _id test
+    non-int-id:
+      field:
+        _id: string
+
 # alternative server connection
 m2-server2:
   connect: mongo2

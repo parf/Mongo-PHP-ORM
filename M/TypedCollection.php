@@ -16,7 +16,8 @@ final class M_TypedCollection extends M_Collection {
 
     function __construct($server, $sdc, array $field2type) {
         $this->type = $field2type;
-        $this->type['_id'] = 'int';  // general framework assumption
+        if (! isset($this->type["_id"]))
+            $this->type['_id'] = 'int';  // general framework assumption
         parent::__construct($server, $sdc);
     }
 
