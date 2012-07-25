@@ -271,6 +271,8 @@ class M_TypeBase {
             // static::e("no type defined, no magic for untyped arrays");
             return $v;
         }
+        if (! $v)
+            return [];
         // array of $t case
         $r = [];
         foreach ($v as $_)
