@@ -180,19 +180,26 @@ class Yaml {
         }
 
         list($k, $v) = explode(":", $l, 2);
-
-        return [$ident, '"'.trim($k).'"', $this->v($v)];  // $k & $v - escaped
+        $k = trim($k);
+        if (isset($k[0]) && $k[0]!='"')
+           $k = '"'.$k.'"';
+        return [$ident, $k, $this->v($v)];  // $k & $v - escaped
     }
 
     // escape value
     function v($v) {
         $v = trim($v);
         // escape strings
-        if ($v && ! is_numeric($v)) {
-            $_ = $v[0];
-            if ($_!='"' && $_!='[' && $_!='{')
-                $v = '"'.$v.'"';
+        if (! $v) 
+            return $v;
+        if (is_numeric($v)) {
+        // AHA !! not all numerics created equal - +34.45E34 and 023424E3434 and 0X343E34 are 
+            if ((string)(float)$v === (string)$v)
+                return $v;
         }
+        $_ = $v[0];
+        if ($_!='"' && $_!='[' && $_!='{')
+            $v = '"'.$v.'"';
         return $v;
     }
 
