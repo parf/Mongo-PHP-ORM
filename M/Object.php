@@ -764,3 +764,6 @@ abstract class M__Proxy {
 }
 
 class NotFoundException extends RuntimeException {}
+
+# legacy
+class M_StrictField extends M_Object {}
