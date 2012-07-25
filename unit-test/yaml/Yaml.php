@@ -4,7 +4,7 @@
   YAML (subset of yaml) parser
 
   limitations:
-     value can be numbers and strings and json expressions ([...] and {...}) 
+     value can be numbers and strings and json expressions ([...] and {...})
 
   does not support:
      multyline nodes (too much ambigility)
@@ -56,7 +56,7 @@ class Yaml {
 
     function doit($ident=0) {
         $r = [];
-        $p = 0; // same-ident position 
+        $p = 0; // same-ident position
         while($ikv=$this->next()) {
             list($id, $k, $v)=$ikv; // ident, key, value
 
@@ -91,7 +91,7 @@ class Yaml {
                     trigger_error("child node expected. Line $this->line '$k:$v'");
                     die;
                 }
-                    
+
                 $this->redo = $next;
                 if ($next[1]===null) { // LIST
                     $v = $this->doList($next_id);
@@ -99,7 +99,7 @@ class Yaml {
                     $v=$this->doit($next_id);
                 }
             }
-            
+
             $r[]=$k.":".$v;
             $p++;
         }
@@ -110,7 +110,7 @@ class Yaml {
     // process "- item"
     function doList($ident) {
         $r = [];
-        while($ikv=$this->next()) {
+        while ($ikv=$this->next()) {
             // echo "doList($ident) ".json_encode($ikv)."\n";
             list($id, $k, $v)=$ikv; // ident, key, value
             if ($ident>$id) {
@@ -126,7 +126,7 @@ class Yaml {
                 die;
             }
 
-            $r[]=$this->v($v);
+            $r[] = self::v($v);
         }
         return "[".join(",", $r)."]";
     }
@@ -168,7 +168,7 @@ class Yaml {
         // LISTS / ARRAYS - "- " prefix
         if ($l[0]=='-' && $l[1]==' ') {
             $l=ltrim(substr($l,1));
-            return [$ident+2, null, $this->v($l)];
+            return [$ident+2, null, self::v($l)];
         }
 
         // if (! preg_match('/^[\w ]+:/', $l))
@@ -183,24 +183,77 @@ class Yaml {
         $k = trim($k);
         if (isset($k[0]) && $k[0]!='"')
            $k = '"'.$k.'"';
-        return [$ident, $k, $this->v($v)];  // $k & $v - escaped
+        return [$ident, $k, self::v($v)];  // $k & $v - escaped
     }
 
     // escape value
-    function v($v) {
+    static function v($v) {
         $v = trim($v);
         // escape strings
-        if (! $v) 
+        if (! $v)
             return $v;
         if (is_numeric($v)) {
-        // AHA !! not all numerics created equal - +34.45E34 and 023424E3434 and 0X343E34 are 
+        // AHA !! not all numerics created equal - +34.45E34 and 023424E3434 and 0X343E34 are
             if ((string)(float)$v === (string)$v)
                 return $v;
         }
         $_ = $v[0];
-        if ($_!='"' && $_!='[' && $_!='{')
+        if ($_=='[')
+            return self::_array($v);
+        if ($_!='"' && $_!='{')
             $v = '"'.$v.'"';
         return $v;
     }
 
+    // string [ xxx ] to json
+    // properly json quote one-line array
+    static function _array($str) { // json array "[...]" as string
+        $r = []; // items
+        $q = 0; // in quotes
+        $sa = 0; // sub-array
+        
+        $z = "";
+        $str[strlen($str)-1]=',';
+        foreach (range(1, strlen($str)-1) as $p) {
+            $c = $str[$p];
+            if ($c=='"') {
+                $q ^= 1; // 0 => 1, 1 => 0
+                $z .= $c;
+                continue;
+            }
+            if ($q) { // in quotes
+                $z .= $c;
+                continue;
+            }
+            if ($c=='}' || $c==']') {
+                $z .= $c;
+                $sa--;
+                continue;
+            }
+            if ($sa) { // in sub-array
+                $z .= $c;
+                continue;
+            }
+
+            if ($c=='[' || $c=='{') {
+                $z .= $c;
+                $sa++;
+                continue;
+            }
+
+            // not in a quote & sub-array
+            if ($c == ',') {
+                if ($z)
+                    $r[] = $z;
+                $z = "";
+                continue;
+            }
+            
+            $z .= $c;
+        }
+        foreach ($r as &$e)
+            $e = self::v($e);
+        return "[".join(",", $r)."]";
+    }
+    
 } // class
