@@ -22,18 +22,40 @@ final class M_TypedCollection extends M_Collection {
     }
 
     // find with Magic Fields Support and clever Aliases in ($fields)
-    
+
     // result will have all original find fields and all magic fields
-    function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields, aliases }}
+    /* legacy */ function fm($q, /*string*/ $fields) { # { _ID => { row_data, magic_fields, aliases }}
         if (! is_string($fields))
             throw new InvalidArgumentException("field list must be string");
+        return $this->f($q, $fields);
+    }
+
+    // result will have all original find fields and all magic fields
+    // IMPORTANT - aliases and magic fields ONLY supported when fields is string
+    // in order to exclude specific fields from result use "-field" notation
+    // example: M::Merchant()->f(['_id'=>5094], "site -_id")
+    //          M::Merchant()->f(['_id'=>5094], "-site -uri")
+    function f($q, /*string*/ $fields='') { # { _ID => { row_data, magic_fields, aliases }}
+        if (! is_string($fields) || ! $fields)
+            return parent::f($q, $fields);
 
         $fields = explode(" ", $fields);
         $mf = [];    // magic fields
         $copy = [];  // aliases
-        foreach($fields as & $f) {
+        $exclude = [];  // exclude fields
+        $ex_id = 0;      // exclude _id
+        foreach ($fields as & $f) {
             if ($f=='_id')
                 continue;
+            if ($f[0]=='-') {
+                if ($f=='-_id') {
+                    $ex_id = 1;
+                    continue;
+                }
+                $f = substr($f, 1);
+                $exclude[] = $f;
+                continue;
+            }                
             $t = @$this->type[$f];
             if ($t && is_array($t) && $t[0]=='alias') { // ALIASES
                 $copy[$t[1]] = $f;
@@ -46,16 +68,28 @@ final class M_TypedCollection extends M_Collection {
             $f = substr($f, 1);
             $t = $this->type[$f];
             if (is_array($t) && $t[0]=='alias') { // ALIASES
-                $copy["_".$t[1]] = "_".$f; 
+                $copy["_".$t[1]] = "_".$f;
                 $f = $t[1];
                 $t = $this->type[$f];
             }
             $mf[$f] = $t;
         }
-        if (! $mf && ! $copy)
-            throw new InvalidArgumentException("no aliases or magic fields in query");
 
-        $z = $this->f($q, $fields); // result
+        if ($exclude) { // excluded fields
+            $f2 = [];
+            // convert fields to ["field" => true / false]
+            foreach ($fields as $f)
+                $f2[$f] = true;
+            foreach ($exclude as $f)
+                $f2[$f] = false;
+            $fields = $f2;
+        }
+
+        // do we have magic or aliases
+        if (! $mf && ! $copy && ! $ex_id)
+            return parent::f($q, $fields);
+
+        $z = parent::f($q, $fields); // result
         foreach($z as &$r) {
             foreach($mf as $f => $t)
                 if (isset($r[$f]))
@@ -63,9 +97,11 @@ final class M_TypedCollection extends M_Collection {
             foreach($copy as $from => $to) {
                 if (isset($r[$from])) {
                     $r[$to]=$r[$from];
-                    // unset($r[$from]); 
+                    unset($r[$from]);
                 }
             }
+            if ($ex_id)
+                unset($r["_id"]);
         }
         return $z;
     }
@@ -77,7 +113,7 @@ final class M_TypedCollection extends M_Collection {
             return ["_id" => (int)$kv];
 
         static $logic = array('$or'=>1, '$and'=>1, '$nor' =>1);
-        
+
         $strict = $this->C("strict");
 
         // kv is an array
@@ -352,7 +388,7 @@ final class M_TypedCollection extends M_Collection {
     }
 
 
-    // fields - space delimited string, array of fields, array of key => (1 | -1)
+    // fields - space delimited string, array of fields, array of key => (true | false)
     // convert to array, process aliases
     function _fields($fields) { // fields as array
         if (! $fields)
@@ -372,7 +408,7 @@ final class M_TypedCollection extends M_Collection {
             }
             return $r;
         }
-        // field => 1,0 case
+        // field => t/f case
         $r=[];
         foreach($fields as $f => $v) {
             if (isset($T[$f]) && ($t = $T[$f]) && is_array($t) && $t[0]=='alias')

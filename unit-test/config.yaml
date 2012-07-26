@@ -99,6 +99,13 @@ m2:
     strict:
       class: M_Object
       strict: 1
+      index:
+        - n, p                  # compound index
+        - map, -n               # n descending
+        - unique person.name    # unique index
+        - sparse age            # sparse index
+        - unique sparse c
+        
       field:
         name:  ["alias", "n"]
         phone: ["alias", "p"]

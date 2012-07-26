@@ -40,7 +40,7 @@ $T->fm([], []);
 
 // 2. you should query something magic
 $T->fm([], "ph");
-#=["InvalidArgumentException","no aliases or magic fields in query",0]
+#={"1":{"_id":1,"ph":16173720000},"2":{"_id":2,"ph":74957260000},"3":{"_id":3,"ph":492218281234}}
 
 // type expansion in finder
 $T->f(['ph' => "7495726-0000"]);
@@ -71,7 +71,7 @@ $T->f(['phone' => "7495726-0000"]);
 
 // alias in result list
 $T->fm(['phone' => "7495726-0000"], "phone");
-#={"2":{"_id":2,"ph":74957260000,"phone":74957260000}}
+#={"2":{"_id":2,"phone":74957260000}}
 
 // magic field in result list
 $T->fm(['phone' => "7495726-0000"], "_ph");
@@ -79,13 +79,13 @@ $T->fm(['phone' => "7495726-0000"], "_ph");
 
 // magic of alias in result list
 $T->fm(['phone' => "7495726-0000"], "_phone");
-#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","_phone":"+7 495-726-0000"}}
+#={"2":{"_id":2,"ph":74957260000,"_phone":"+7 495-726-0000"}}
 
 // magic field and alias in result list
 // combo of above, because of alias thereis no original "ph" field
 $T->fm(['phone' => "7495726-0000"], "phone _ph");
-#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","phone":74957260000}}
+#={"2":{"_id":2,"_ph":"+7 495-726-0000","phone":74957260000}}
 #
 // magic of alias + alias
 $T->fm(['phone' => "7495726-0000"], "phone _phone");
-#={"2":{"_id":2,"ph":74957260000,"_ph":"+7 495-726-0000","phone":74957260000,"_phone":"+7 495-726-0000"}}
+#={"2":{"_id":2,"phone":74957260000,"_phone":"+7 495-726-0000"}}
