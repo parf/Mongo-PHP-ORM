@@ -396,8 +396,8 @@ final class M_TypedCollection extends M_Collection {
         if (! is_array($fields))
             $fields = explode(" ", $fields);
         $T = $this->type;
-        if (! $T)
-            return $fields;
+        // if (! $T)
+        //    return $fields;
         if (isset($fields[0])) { // list of fields
             $r=[];
             foreach($fields as $f) {
