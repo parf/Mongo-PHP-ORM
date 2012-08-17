@@ -412,7 +412,7 @@ class M_Collection implements ArrayAccess {
         }
         return $this->buffered_next($buffer);
     }
-    
+
     // APC based sequence caching
     // buffer - number of IDs to buffer
     // will perform one mongo request per $buffer queries
@@ -443,7 +443,7 @@ class M_Collection implements ArrayAccess {
                 return M_Sequence::next($this->name, 1, true);
         }
         return $v-$c;
-    }    
+    }
 
     function lastId() { # get last id from collection
         $r=$this->f([":sort" => "-_id", ":limit" => 1], "_id");
@@ -632,7 +632,7 @@ class M_Collection implements ArrayAccess {
         $this->sdc = $server ? $server.":".$name : $name;
         $this->name = $name;
         list($db, $col)=explode(".", $name, 2);
-        $this->MC=M::Mongo($server)->__get($db)->__get($col);
+        $this->MC=M::Mongo($server ? $server.":" : "")->__get($db)->__get($col);
     }
 
     // --------------------------------------------------------------------------------
