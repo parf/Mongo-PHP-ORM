@@ -55,7 +55,7 @@ final class M_TypedCollection extends M_Collection {
                 $f = substr($f, 1);
                 $exclude[] = $f;
                 continue;
-            }                
+            }
             $t = @$this->type[$f];
             if ($t && is_array($t) && $t[0]=='alias') { // ALIASES
                 $copy[$t[1]] = $f;
@@ -130,6 +130,8 @@ final class M_TypedCollection extends M_Collection {
                     $t=$this->_query($t);
                 continue;
             }
+            if($k[0]==':')
+                continue;
             $t = @$this->type[$k];
             if (! $t) {
                 if ($strict)
