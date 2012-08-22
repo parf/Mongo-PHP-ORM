@@ -444,5 +444,31 @@ class M_TypeBase {
         return $v;
     }
     
+    // integer representation of date support
+    // so you can index on day field and group by day
+    static function applyDay($v) { # int
+        if (is_string($v))
+            return time2day(strtotime($v));
+
+        if (is_int($v))
+            return $v;
+
+        self::e("", $v, "date");
+    }
+
+    static function get_Day($v) { # "May 25, 2012"
+        return date("M d, Y", day2time($v));
+    }
+    
+    
+    // mixed value type. Actualy being used as bypass for magic and strict logic.
+    // Means that any type of data could be used.
+    static function applyMixed($v) {
+        return $v;
+    }
+
+    static function get_Mixed($v) {
+        return $v;
+    }
 
 } // M_TypeBase
