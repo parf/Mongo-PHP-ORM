@@ -134,8 +134,27 @@ final class M_TypedCollection extends M_Collection {
                 continue;
             $t = @$this->type[$k];
             if (! $t) {
-                if ($strict)
-                    throw new DomainException("unknown field: $this.$k");
+                if ($strict) {
+                    #check that no upper fields has type "mixed"
+                    $parts = explode(".", $k);
+                    $ff = '';
+                    $bypass = 0;
+                    foreach($parts as $part){
+                        if ($ff) {
+                            $ff .= '.';
+                        }
+                        $ff .= $part;
+                        if ($t=@$T[ $ff ]) {
+                            if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
+                                $bypass = 1;
+                                break;
+                            }
+                        }
+                    }
+                    if (!$bypass) {
+                        throw new DomainException("unknown field: $this.$k");
+                    }
+                }
                 continue;
             }
 

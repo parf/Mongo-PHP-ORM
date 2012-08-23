@@ -537,8 +537,27 @@ class M_Object implements ArrayAccess {
         }
 
         // strict collection, known field check
-        if (! $T && $this->MC->C("strict") && $field[0]!='_')
-            throw new DomainException("unknown field $this.$field");
+        if (! $T && $this->MC->C("strict") && $field[0]!='_') {
+            #check that no upper fields has type "mixed"
+            $parts = explode(".", $k);
+            $ff = '';
+            $bypass = 0;
+            foreach($parts as $part){
+                if ($ff) {
+                    $ff .= '.';
+                }
+                $ff .= $part;
+                if ($t=@$T[ $ff ]) {
+                    if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
+                        $bypass = 1;
+                        break;
+                    }
+                }
+            }
+            if (!$bypass) {
+                throw new DomainException("unknown field $this.$field");
+            }
+        }
 
         if (isset($this->D[$field]))
             return $this->D[$field];
