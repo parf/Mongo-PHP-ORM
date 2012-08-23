@@ -539,7 +539,7 @@ class M_Object implements ArrayAccess {
         // strict collection, known field check
         if (! $T && $this->MC->C("strict") && $field[0]!='_') {
             #check that no upper fields has type "mixed"
-            $parts = explode(".", $k);
+            $parts = explode(".", $field);
             $ff = '';
             $bypass = 0;
             foreach($parts as $part){
