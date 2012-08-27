@@ -547,7 +547,7 @@ class M_Object implements ArrayAccess {
                     $ff .= '.';
                 }
                 $ff .= $part;
-                if ($t=@$T[ $ff ]) {
+                if ($t=@$this->MC->type[$ff]) {
                     if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
                         $bypass = 1;
                         break;
