@@ -448,7 +448,7 @@ class M_TypeBase {
     // so you can index on day field and group by day
     static function applyDay($v) { # int
         if (is_string($v))
-            return time2day(strtotime($v));
+            return HB::time2day(strtotime($v));
 
         if (is_int($v))
             return $v;
@@ -457,7 +457,7 @@ class M_TypeBase {
     }
 
     static function get_Day($v) { # "May 25, 2012"
-        return date("M d, Y", day2time($v));
+        return date("M d, Y", HB::day2time($v));
     }
     
     
@@ -471,4 +471,16 @@ class M_TypeBase {
         return $v;
     }
 
+    
+    // integer representation of month and year without date.
+    // so you can index on ym field and group by month
+    // $v supposed to be any int like 1209, string '1209' or array [12, 9]
+    static function applyYm($v) { #int
+        return HB::yms($v);
+    }
+
+    static function get_Ym($v) { # [y,m]
+        return HB::ym($v);
+    }
+    
 } // M_TypeBase
