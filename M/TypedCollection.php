@@ -144,7 +144,7 @@ final class M_TypedCollection extends M_Collection {
                             $ff .= '.';
                         }
                         $ff .= $part;
-                        if ($t=@$T[ $ff ]) {
+                        if ($t=@$this->type[ $ff ]) {
                             if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
                                 $bypass = 1;
                                 break;
