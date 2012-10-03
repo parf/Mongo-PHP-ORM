@@ -106,8 +106,12 @@ class M_TypeBase {
 
     // T = ["ENUM", {}]
     static function applyEnum($v, $p) {
-        if (! is_scalar($v))
+        if (! is_scalar($v)) {
+            if (null === $v) {
+                static::e("bad enum key: $v", 0, "[ENUM]");
+            }
             return static::e("scalar expected", $v, "[ENUM]");
+        }
         $p = $p[0];
         if ( ($_ = array_search($v, $p)) !== false)
             return $_;
@@ -258,8 +262,12 @@ class M_TypeBase {
 
     // T = ["ENUM", $p]
     static function get_ENUM($v, $p) {
-        if (! is_scalar($v))
+        if (! is_scalar($v)) {
+            if (null === $v) {
+                return null;
+            }
             return static::e("scalar expected", $v, "get_Magic [ENUM]");
+        }
         $T = $p[0];
         return isset($T[$v]) ? $T[$v] : null;
     }
@@ -408,8 +416,12 @@ class M_TypeBase {
     // complex type: ["ENUM", {db => expanded}]
     static function set_ENUM($v, $T) {
         $t = $T[0];
-        if (! is_scalar($v))
+        if (! is_scalar($v)) {
+            if (null === $v) {
+                static::e("bad enum VALUE: $v");
+            }
             return static::e("scalar expected", $v, "set_ENUM");
+        }
         if ( ($_ = array_search($v, $t)) !== false)
                 return $_;
         return static::e("bad enum VALUE: $v");
