@@ -94,7 +94,7 @@ class M {
 
         $connect = M::C($server, "connect");
         if (! $connect) {
-            trigger_error("config 'mongo.connect' required");
+            trigger_error("config 'm2.connect' required");
             die;
         }
 
