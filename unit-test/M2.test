@@ -13,8 +13,9 @@ include_once "init.php";
 M::reset();
 #=null
 
-M();
-#={"class":"Mongo","0":{"connected":true,"status":null}}
+get_class(M());
+#="Mongo"
+
 M("test.sequence");
 #={"class":"M_Collection","0":{"name":"test.sequence","sdc":"test.sequence","server":""}}
 M::Base();
@@ -110,10 +111,12 @@ in_array("test.no_autoload", M::listCollections("test"));
 #=true
 
 // basic functionality
-M();
-#={"class":"Mongo","0":{"connected":true,"status":null}}
-M()->test;
-#={"class":"MongoDB","0":{"w":1,"wtimeout":10000}}
+get_class(M());
+#="Mongo"
+
+get_class(M()->test);
+#="MongoDB"
+
 M("test.autoload");
 #={"class":"M_Collection","0":{"name":"test.autoload","sdc":"test.autoload","server":""}}
 

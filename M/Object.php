@@ -228,11 +228,11 @@ class M_Object implements ArrayAccess {
 
         foreach($r[0] as $k => $v)
             $this->reset($k);
-        
+
         // 2.1 way
         $kv = $this->MC->_kv($r[0]);
         $this->MC->MC()->update(['_id' => $this->id], [$op => $kv]);
-        
+
         return $this;
     }
 
@@ -501,9 +501,10 @@ class M_Object implements ArrayAccess {
                 if ($t && is_array($t) && $t[0]=='array')
                     return M_Type::getMagic($this->__get_deep($field), $t[1]);
             }
-            
-            if ($exception)
+            if ($exception) {
+                #v($this->MC->type);
                 throw new DomainException("type required for magic field $this.$field");
+            }
 
             if ($dot)
                 return $this->__get_deep($field);
@@ -561,7 +562,7 @@ class M_Object implements ArrayAccess {
 
         if (isset($this->D[$field]))
             return $this->D[$field];
-        
+
         // Magic Field
         if ($field[0]=='_')
             return $this->__get_magic(substr($field, 1));
