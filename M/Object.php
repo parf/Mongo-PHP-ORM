@@ -456,24 +456,37 @@ class M_Object implements ArrayAccess {
     }
 
     // field is a deep field (as in "node.node.field")
-    protected function __get_deep($field) { // value
+    // if $magic - deep field will be fetched as "magic"
+    protected function __get_deep($field, $magic=false, $exception=true) { // value
         $p = explode(".", $field);
         if (! isset($this->D[$p[0]]))
             $this->load($p[0]);
         $r = & $this->D;
 
-        if ($t = @$this->MC->type[$p[0]])
-            if (is_array($t) && $t[0]=='alias')
-                $p[0]=$t[1];
+        $t = @$this->MC->type;
+        if ($t1 = @$t[$p[0]])
+            if (is_array($t1) && $t1[0]=='alias')
+                $p[0]=$t1[1];
 
         foreach($p as $k) {
+            if ($magic) {
+                if ($t && is_array($t)) {
+                    $t = $t[$k];
+                } else {
+                    $t = null;
+                }
+                if (!$t && $exception) {
+                    throw new DomainException("type required for magic field $this.$field");
+                }
+            }
+            
             if (! isset($r[$k]))
                 return null;
             if (! is_array($r[$k]))
-                return $r[$k];
+                return $magic?M_Type::getMagic($r[$k], $t, $exception):$r[$k];
             $r = & $r[$k];
         }
-        return $r;
+        return $magic?M_Type::getMagic($r, $t, $exception):$r;
     }
 
     // magic representation of a field
@@ -487,6 +500,7 @@ class M_Object implements ArrayAccess {
             return $this->MC->allMagic($this->D); // typed collection expected
 
         $t = @$this->MC->type[$field];
+
         if ($t && is_array($t) && $t[0]=='alias') {
             $field = $t[1];
             $t = @$this->MC->type[$field];
@@ -501,13 +515,15 @@ class M_Object implements ArrayAccess {
                 if ($t && is_array($t) && $t[0]=='array')
                     return M_Type::getMagic($this->__get_deep($field), $t[1]);
             }
+            
+            if ($dot)
+                return $this->__get_deep($field, true, $exception);
+            
             if ($exception) {
                 #v($this->MC->type);
                 throw new DomainException("type required for magic field $this.$field");
             }
-
-            if ($dot)
-                return $this->__get_deep($field);
+            
             return $this->_g($field);
         }
 

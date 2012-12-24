@@ -352,7 +352,7 @@ final class M_TypedCollection extends M_Collection {
 
             $t = @$T[$f]; // current field type
 
-            // METHODS && ALIASES
+            // METHODS && ALIASES && SUB_ARRAY
             if ($t && is_array($t)) {
                 if ($t[0]=='alias') {
                     $rename[$f]  = $t[1];
@@ -363,6 +363,15 @@ final class M_TypedCollection extends M_Collection {
                     $m = [$obj, "set$f"];
                     if (is_callable($m))
                         $v = $m($v);
+                    continue;
+                }
+                if (is_array($v) && $t[0] == 'hash') {
+                    //Assign array of $sub_field=>value to parent node.
+                    //Both $v and type are arrays
+                    foreach ($v as $sub_f=>&$sub_v){
+                        //recursively call _kv
+                        $this->_kv(["$f.$sub_f"=>$sub_v], $obj, $array_assign_check);
+                    }
                     continue;
                 }
             }
