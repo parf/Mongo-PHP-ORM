@@ -430,6 +430,7 @@ class M_Object implements ArrayAccess {
     protected function _get($field, $T) {
         switch($T[0]) {
         case "array":  // empty array of whatever
+        case "hash":
             return $this->_g($field, []);
         case "method":
             $m = [$this, "get$field"];
@@ -545,7 +546,6 @@ class M_Object implements ArrayAccess {
     //   Magic fields - fields starting with _
     function __get($field) {
         $T = $this->MC->C("field.$field");
-
         // complex type: alias, relation, method, ...
         if (is_array($T)) {
             if ($T[0]=='alias')

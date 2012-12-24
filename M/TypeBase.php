@@ -134,6 +134,21 @@ class M_TypeBase {
         return $v;
     }
     
+    // T = ["HASH", "TYPES"]
+    // no type enforcement, you can query array with scalar
+    // it is OK to query array with scalar !!!
+    static function applyHash($v, $t="")  {
+        if (! $t)
+            return $v ? $v : [];
+        if (! is_array($v))
+            return self::apply($v, $t);
+        // array of $t case
+        foreach ($v as &$_)
+            $_ = self::apply($_, $t);
+        return $v;
+    }
+    
+    
     // Anti CSS (cross-site scripting) type - text only
     // all html entities are escaped
     /*
@@ -275,6 +290,23 @@ class M_TypeBase {
     // ARRAY OF type $T[0]
     // or just an array
     static function get_Array($v, $T=false) { //
+        if ($T === false) {
+            // static::e("no type defined, no magic for untyped arrays");
+            return $v;
+        }
+        if (! $v)
+            return [];
+        // array of $t case
+        $r = [];
+        foreach ($v as $_)
+            $r[] = self::getMagic($_, $T[0]);
+        return $r;
+    }
+    
+    // ARRAY OF type $T[0]
+    // or just an array
+    static function get_Hash($v, $T=false) { //
+v('get_Hash', $v, $T);
         if ($T === false) {
             // static::e("no type defined, no magic for untyped arrays");
             return $v;
