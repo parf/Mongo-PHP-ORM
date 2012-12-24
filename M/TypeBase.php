@@ -102,6 +102,7 @@ class M_TypeBase {
     static function applyFloat($v)  { return (float)$v; }
     static function applyString($v) { return (string)$v; }
     static function applyBool($v)   { return (bool)$v; }
+    static function applyBitmask($v)    { return (int)$v; }
 
 
     // T = ["ENUM", {}]
@@ -320,6 +321,10 @@ v('get_Hash', $v, $T);
         return $r;
     }
 
+    static function get_Bitmask($v) { // 99,999,999
+        return (int)$v;
+    }
+    
     static function get_Int($v) { // 99,999,999
         return number_format((int)$v);
     }
@@ -465,6 +470,10 @@ v('get_Hash', $v, $T);
 
     // all non-numeric chars are removed
     static function set_Int($v) {
+        return (int) preg_replace("![^\d]!", "", $v);
+    }
+    
+    static function set_Bitmask($v) {
         return (int) preg_replace("![^\d]!", "", $v);
     }
 
