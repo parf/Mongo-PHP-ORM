@@ -307,7 +307,6 @@ class M_TypeBase {
     // ARRAY OF type $T[0]
     // or just an array
     static function get_Hash($v, $T=false) { //
-v('get_Hash', $v, $T);
         if ($T === false) {
             // static::e("no type defined, no magic for untyped arrays");
             return $v;
@@ -339,6 +338,11 @@ v('get_Hash', $v, $T);
         return M::qh($v);
     }
 
+    // all html entities are escaped at the applyText
+    static function get_Text($v) { // &ltscript
+        return $v;
+    }
+    
     static function get_Price($v) {
         return number_format((float)$v, 2);
     }
