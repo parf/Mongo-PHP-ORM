@@ -351,8 +351,7 @@ final class M_TypedCollection extends M_Collection {
             }
 
             $t = @$T[$f]; // current field type
-
-            // METHODS && ALIASES && SUB_ARRAY
+            // METHODS && ALIASES && SUB_ARRAYS
             if ($t && is_array($t)) {
                 if ($t[0]=='alias') {
                     $rename[$f]  = $t[1];
@@ -378,10 +377,10 @@ final class M_TypedCollection extends M_Collection {
 
             if (! $t) { // untyped
                 // node.INDEX (node.123) support
+
                 if ($p=strrpos($f, '.')) {
-                    
-                    $t=@$T[ substr($f, 0, $p) ];
-#                    if (is_numeric(substr($f, $p+1))) {
+                    if (is_numeric(substr($f, $p+1))) {
+                        $t=@$T[ substr($f, 0, $p) ];
                         // looking for array of $type
                         if ($t/* && is_array($t)*/) {
                             if ($t[0]=='alias') {
@@ -392,29 +391,39 @@ final class M_TypedCollection extends M_Collection {
                                 $v = M_Type::apply($v, $t[1]);
                                 continue;
                             }
-                            if ($t[0]=='hash') {
-                                $v = M_Type::apply($v, $t[substr($f, $p+1)]);
-                                continue;
-                            }
                             throw new DomainException("array type expected for $this.$f");
                         }
-#                   }
+                   }
                 }
+                
                 if ($strict) {
+#v("=======>$f");
                     #check that no upper fields has type "mixed"
                     $parts = explode(".", $f);
                     $ff = '';
                     $bypass = 0;
+                    $t=@$T;
                     foreach($parts as $part){
                         if ($ff) {
                             $ff .= '.';
                         }
                         $ff .= $part;
-                        if ($t=@$T[ $ff ]) {
-                            if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
-                                $bypass = 1;
-                                break;
+                        $t = $t[$part];
+                        if ($t) {
+                            if (is_array($t)) {
+                                if ($t[0] == 'array' && $t[1] == 'mixed') {
+                                    $bypass = 1;
+                                    break;
+                                }
+                                if ($t[0] == 'hash') {
+                                    continue;
+                                }
+                                $v = M_Type::apply($v, $t);
                             }
+                            $v = M_Type::apply($v, $t);
+#v("treat as ".x2s($t));
+                            $bypass = 1;
+                            continue;
                         }
                     }
                     if (!$bypass) {
