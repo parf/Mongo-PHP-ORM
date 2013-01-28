@@ -1,0 +1,113 @@
+#!/bin/env spartan-test
+<?
+// Spartan Test: http://github.com/parf/spartan-test - minimalistic php testing framework
+
+/*
+
+  Mongo Bug Summary:
+    update on empty array element does not work using "dot.notation" updates
+    
+  after:
+    Collection->insert(["_id" => 2, "a" => []]);
+  
+  update:
+    Collection->update(["_id" => 2], ["a.b" => "value"]);
+
+  does not work
+
+
+Environment:
+
+  php-5.4.11-1.el6.remi.x86_64
+  php-pecl-mongo-1.3.3-1.el6.remi.x86_64
+  mongo-10gen-server-2.2.2-mongodb_1.x86_64
+
+*/
+
+// WORKING TEST
+// EXPECTED BEHAVIOUR
+$M = new MongoClient("mongo");
+#={"class":"MongoClient","0":{"connected":false,"status":null}}
+
+$T = M()->test->dot_set;
+#={"class":"MongoCollection","0":{"w":0,"wtimeout":10000}}
+
+// shortcut to simplify test
+$ID = ["_id" => 2];
+#={"_id":2}
+
+$T->remove($ID);
+#=true
+
+$T->insert($ID);
+#=true
+
+$T->findOne($ID);
+#={"_id":2}
+
+$T->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+
+$T->findOne($ID);
+#={"_id":2,"a":{"b":1}}
+
+// -------------------------------------------------------------------------------- 
+// BUG #1
+// can't update item using "dot.notation" when item is an empty array
+$T->remove($ID);
+#=true
+$T->insert(["_id" => 2, "a" => []]);
+#=true
+
+$T->findOne($ID);
+#={"_id":2,"a":[]}
+
+$T->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+
+// BUG HERE
+$T->findOne($ID);   // should BE {"_id":2,"a":{"b"::1}}
+#={"_id":2,"a":[]}
+
+
+// -------------------------------------------------------------------------------- 
+// no bug when inserting without dot notation
+$T->update($ID, ['$set' => ["a" => ["b" => 1]]]);
+#=true
+$T->findOne($ID);   // working as expected
+#={"_id":2,"a":{"b":1}}
+
+// we can update existing value using dot notation
+$T->update($ID, ['$set' => ["a.b" => 2]]);
+#=true
+$T->findOne($ID);   // working as expected
+#={"_id":2,"a":{"b":2}}
+
+// -------------------------------------------------------------------------------- 
+// narrow down BUG to empty array case
+// works ok when array is PRE-POPULATED with something
+$T->remove($ID);
+#=true
+$T->insert(["_id" => 2, "a" => ["x" => 1]]);
+#=true
+
+$T->findOne($ID);
+#={"_id":2,"a":{"x":1}}
+
+$T->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+
+$T->findOne($ID);        // working as expected
+#={"_id":2,"a":{"b":1,"x":1}}
+
+
+// does not matter how record get in here, insert/update
+// is it insert related issue?
+$T->update($ID, ['$set' => ['a' => []]]);
+#=true
+$T->findOne($ID);
+#={"_id":2,"a":[]}
+$T->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+$T->findOne($ID);  // BUG is still there.
+#={"_id":2,"a":[]}
