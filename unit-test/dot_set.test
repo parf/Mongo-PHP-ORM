@@ -1,0 +1,47 @@
+#!/bin/env spartan-test
+<?
+//  
+// https://github.com/parf/spartan-test
+//
+// HOMEBASE FRAMEWORK
+// Mongo ORM v2
+// https://github.com/parf/Mongo-PHP-ORM
+
+include_once "init.php";
+#=true
+
+M::reset();
+#=null
+
+get_class(M());
+#="Mongo"
+
+// GOOD EXAMPLE
+M("test.dot_set")->remove(["_id"=>1]);
+#=true
+
+M("test.dot_set")->insert(["_id" =>1]);
+#=1
+
+M("test.dot_set", 1)["a.b.c"] = 1;
+#=1
+
+M("test.dot_set", 1)["a.b.c"];
+#=1
+
+
+// BUG EXAMPLE
+M("test.dot_set")->remove(["_id"=>1]);
+#=true
+
+M("test.dot_set")->insert(["_id" =>1, "a"=>[]]);
+#=1
+
+M("test.dot_set", 1)["a.b.c"] = 2;
+#=2
+
+M("test.dot_set", 1)["a.b.c"];
+#=2
+
+
+?>
