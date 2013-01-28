@@ -15,9 +15,12 @@
 
   does not work
 
+  issue is not php related, it can be reproduced in mongo shell
+  our idea that problem lies in internal empty hash vs empty array storage
 
 Environment:
 
+  scientific linux 6.3 (same as RHEL6.3)
   php-5.4.11-1.el6.remi.x86_64
   php-pecl-mongo-1.3.3-1.el6.remi.x86_64
   mongo-10gen-server-2.2.2-mongodb_1.x86_64
@@ -111,3 +114,22 @@ $T->update($ID, ['$set' => ["a.b" => 1]]);
 #=true
 $T->findOne($ID);  // BUG is still there.
 #={"_id":2,"a":[]}
+
+// seems like it is a hash vs list issue
+// most likely mongo internally distiunguish between empty array and empty hash and treat them differently
+
+$T->remove($ID);
+#=true
+$T->insert(["_id" => 2, "a" => ["x" => 1]]); // initalize 'a' as a hash
+#=true
+$T->findOne($ID);
+#={"_id":2,"a":{"x":1}}
+$T->update($ID, ['$unset' => ["a.x" =>1]]);   // 'a' is still a hash
+#=true
+$T->findOne($ID);    // 'a' is a hash
+#={"_id":2,"a":[]}
+$T->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+$T->findOne($ID);        // working as expected
+#={"_id":2,"a":{"b":1}}
+
