@@ -7,12 +7,8 @@
 // Mongo ORM v2
 // https://github.com/parf/Mongo-PHP-ORM
 
-include_once "init.php";
-#=true
-
-M::reset();
-#=null
-
+# ;include_once "init.php";
+; M::reset();
 get_class(M());
 #="Mongo"
 
@@ -40,8 +36,29 @@ M("test.dot_set")->insert(["_id" =>1, "a"=>[]]);
 M("test.dot_set", 1)["a.b.c"] = 2;
 #=2
 
+M("test.dot_set", 1)->_;
+#={"_id":1,"a":[]}
+
 M("test.dot_set", 1)["a.b.c"];
 #=2
 
+// BUG EXAMPLE (raw mongo)
+$M = new MongoClient("mongo");
+#={"class":"MongoClient","0":{"connected":false,"status":null}}
 
-?>
+$T = M()->test->dot_set;
+#={"class":"MongoCollection","0":{"w":0,"wtimeout":10000}}
+
+$T->insert(["_id" => 2, "a" => []]);
+#=true
+
+$T->findOne(["_id" => 2]);
+#={"_id":2,"a":[]}
+
+$T->update(["_id" => 2], ['$set' => ["a.b.c" => 1]]);
+#=true
+
+$T->findOne(["_id" => 2]);
+#={"_id":2,"a":[]}
+
+
