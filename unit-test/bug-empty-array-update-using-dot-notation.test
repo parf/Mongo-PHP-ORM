@@ -32,104 +32,103 @@ Environment:
 $M = new MongoClient("mongo");
 #={"class":"MongoClient","0":{"connected":false,"status":null}}
 
-$T = M()->test->dot_set;
+$C = M()->test->dot_set;
 #={"class":"MongoCollection","0":{"w":0,"wtimeout":10000}}
 
 // shortcut to simplify test
-$ID = ["_id" => 2];
+; $ID = ["_id" => 2];
+
+$C->remove($ID);
+#=true
+$C->insert($ID);
+#=true
+$C->findOne($ID);
 #={"_id":2}
-
-$T->remove($ID);
+$C->update($ID, ['$set' => ["a.b" => 1]]);
 #=true
-
-$T->insert($ID);
-#=true
-
-$T->findOne($ID);
-#={"_id":2}
-
-$T->update($ID, ['$set' => ["a.b" => 1]]);
-#=true
-
-$T->findOne($ID);
+$C->findOne($ID);
 #={"_id":2,"a":{"b":1}}
 
 // -------------------------------------------------------------------------------- 
-// BUG #1
+// BUG!
 // can't update item using "dot.notation" when item is an empty array
-$T->remove($ID);
-#=true
-$T->insert(["_id" => 2, "a" => []]);
-#=true
-
-$T->findOne($ID);
+; $C->remove($ID);
+; $C->insert(["_id" => 2, "a" => []]);
+$C->findOne($ID);
 #={"_id":2,"a":[]}
 
-$T->update($ID, ['$set' => ["a.b" => 1]]);
+// this update does not work as expected << BUG HERE
+$C->update($ID, ['$set' => ["a.b" => 1]]);
 #=true
 
-// BUG HERE
-$T->findOne($ID);   // should BE {"_id":2,"a":{"b"::1}}
+// data is not updated :(
+$C->findOne($ID);   // should BE {"_id":2,"a":{"b"::1}}
 #={"_id":2,"a":[]}
-
 
 // -------------------------------------------------------------------------------- 
 // no bug when inserting without dot notation
-$T->update($ID, ['$set' => ["a" => ["b" => 1]]]);
+$C->update($ID, ['$set' => ["a" => ["b" => 1]]]);
 #=true
-$T->findOne($ID);   // working as expected
+$C->findOne($ID);   // working as expected
 #={"_id":2,"a":{"b":1}}
 
 // we can update existing value using dot notation
-$T->update($ID, ['$set' => ["a.b" => 2]]);
+$C->update($ID, ['$set' => ["a.b" => 2]]);
 #=true
-$T->findOne($ID);   // working as expected
+$C->findOne($ID);   // working as expected
 #={"_id":2,"a":{"b":2}}
 
 // -------------------------------------------------------------------------------- 
 // narrow down BUG to empty array case
 // works ok when array is PRE-POPULATED with something
-$T->remove($ID);
+$C->remove($ID);
 #=true
-$T->insert(["_id" => 2, "a" => ["x" => 1]]);
-#=true
-
-$T->findOne($ID);
-#={"_id":2,"a":{"x":1}}
-
-$T->update($ID, ['$set' => ["a.b" => 1]]);
+$C->insert(["_id" => 2, "a" => ["x" => 1]]);
 #=true
 
-$T->findOne($ID);        // working as expected
+$C->findOne($ID);
+#={"_id":2,"a":{"x":1}} 
+$C->update($ID, ['$set' => ["a.b" => 1]]);
+#=true
+
+$C->findOne($ID);        // working as expected
 #={"_id":2,"a":{"b":1,"x":1}}
 
 
-// does not matter how record get in here, insert/update
 // is it insert related issue?
-$T->update($ID, ['$set' => ['a' => []]]);
-#=true
-$T->findOne($ID);
+// does not matter how record get in here, insert/update
+; $C->update($ID, ['$set' => ['a' => []]]);
+$C->findOne($ID);
 #={"_id":2,"a":[]}
-$T->update($ID, ['$set' => ["a.b" => 1]]);
-#=true
-$T->findOne($ID);  // BUG is still there.
+; $C->update($ID, ['$set' => ["a.b" => 1]]);
+$C->findOne($ID);  // BUG is still there.
 #={"_id":2,"a":[]}
 
 // seems like it is a hash vs list issue
 // most likely mongo internally distiunguish between empty array and empty hash and treat them differently
 
-$T->remove($ID);
+$C->remove($ID);
 #=true
-$T->insert(["_id" => 2, "a" => ["x" => 1]]); // initalize 'a' as a hash
+$C->insert(["_id" => 2, "a" => ["x" => 1]]); // initalize 'a' as a hash
 #=true
-$T->findOne($ID);
+$C->findOne($ID);
 #={"_id":2,"a":{"x":1}}
-$T->update($ID, ['$unset' => ["a.x" =>1]]);   // 'a' is still a hash
+$C->update($ID, ['$unset' => ["a.x" =>1]]);   // 'a' is still a hash
 #=true
-$T->findOne($ID);    // 'a' is a hash
+$C->findOne($ID);    // 'a' is a hash
 #={"_id":2,"a":[]}
-$T->update($ID, ['$set' => ["a.b" => 1]]);
+$C->update($ID, ['$set' => ["a.b" => 1]]);
 #=true
-$T->findOne($ID);        // working as expected
+$C->findOne($ID);        // working as expected
 #={"_id":2,"a":{"b":1}}
 
+
+// Workaround / non-obvious solution
+// from https://jira.mongodb.org/browse/PHP-172
+; $C->remove($ID);
+; $C->insert(["_id" => 2, "a" => (object) []]); // initialize 'a' as a hash (object == hash)
+$C->findOne($ID);
+#={"_id":2,"a":[]}
+; $C->update($ID, ['$set' => ["a.b" => 1]]);
+$C->findOne($ID);        // working as expected
+#={"_id":2,"a":{"b":1}}
