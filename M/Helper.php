@@ -150,7 +150,7 @@ class M_Helper {
     //  sum,count,min,max
     //
     // Examples:
-    //  M("merchant.sale")->groupBy("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011))
+    //  M("merchant.sale")->groupBy("sale:sum sale:max sale:count", "merchant_id", ["year" => 2011])
     //   ==  select merchant_id, sum(sale) from merchant.sale  where year=2011 group by merchant_id
     static function groupBy($mc, $field_op, $group_by="", array $where=array(), $raw=false) { # { $group_fields, $sum_fields }
         $initial=[];
@@ -187,7 +187,7 @@ class M_Helper {
         $R=$mc->group(M::qk($group_by),
                       $initial,
                       $reduce,
-                      array("condition" => $where)
+                      ["condition" => $where]
                       );
 
         if ($R["ok"]!=1) {
@@ -243,7 +243,7 @@ class M_Helper {
                 $o["sparse"]=true;
                 $so[]="sp";
             }
-            $index_name=str_replace( array(",", "."), "_","$f");
+            $index_name=str_replace( [",", "."], "_","$f");
             if ($so)
                 $index_name=join("_",$so)."_".$index_name;
 
@@ -257,7 +257,7 @@ class M_Helper {
             foreach( explode(",", $f) as $fn )
                 $fields[$fn]=1;
 
-            $c->ensureIndex($fields, $o + array("name" => $index_name));
+            $c->ensureIndex($fields, $o + ["name" => $index_name]);
 
             if ($echo)
                 echo "Indexing ($index_name) ".($o?json_encode($o):"")." $f in ".$c."\n";

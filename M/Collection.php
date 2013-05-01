@@ -219,7 +219,7 @@ class M_Collection implements ArrayAccess {
         if ($c==1)
            $f=array();
         if (! isset($query[$k]))
-            $query[$k]=array('$exists' => true);
+            $query[$k]=['$exists' => true];
         if ($c==2) {
             $vf=$f[1];
             if (! isset($query[$vf]))
@@ -246,7 +246,7 @@ class M_Collection implements ArrayAccess {
     }
 
     function updateMultiple($q, $newobj, array $options = array() ) {
-        return $this->update($q, $newobj, array("multiple" => true) + $options);
+        return $this->update($q, $newobj, ["multiple" => true] + $options);
     }
 
     // update + set/unset | insert
@@ -464,7 +464,7 @@ class M_Collection implements ArrayAccess {
     //  sum,count,min,max
     //
     // Examples:
-    //  M('merchant.sale')->group_by("sale:sum sale:max sale:count", "merchant_id", array("year" => 2011) )
+    //  M('merchant.sale')->group_by("sale:sum sale:max sale:count", "merchant_id", ["year" => 2011] )
     //   ==  select merchant_id, sum(sale) from merchant.sale  where year=2011 group by merchant_id
     function groupBy($field_op, $group_by="", array $where=[]) { # { $group_fields, $sum_fields }
         return M_Helper::groupBy($this->MC, $field_op, $group_by, $where);
@@ -566,7 +566,7 @@ class M_Collection implements ArrayAccess {
     }
 
 
-    // IF query  is NOT AN ARRAY - $query  - array("_id" => $query)
+    // IF query  is NOT AN ARRAY - $query  - ["_id" => $query]
     function update($query, array $newobj, array $options = []) {
         Profiler::in("M2:update", [$this->sdc, $query, $newobj, $options]);
         $query = $this->_query($query);

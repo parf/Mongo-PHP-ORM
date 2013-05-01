@@ -229,7 +229,7 @@ class M_TypeBase {
         if (! preg_match('!^https?://!', $v))
             $v="http://".$v;
 
-        $v = str_replace(array("<", ">",'"',"'"), "", $v); // avoid css
+        $v = str_replace(["<", ">",'"',"'"], "", $v); // avoid css
         $v = filter_var($v, FILTER_VALIDATE_URL);
         
         // we do not store 'http://' prefix
@@ -397,7 +397,7 @@ class M_TypeBase {
     // US Numbers : 1-XXX-XXXX
     // NON US Numbers: +Country_Code XXX-XXX-rest
     private static function _international_phone_format($ph) {
-        $short_prefix=array(
+        $short_prefix=[
                             20=>1,27=>1,
                             30=>1,31=>1,32=>1,33=>1,34=>1,36=>1,39=>1,
                             40=>1,41=>1,43=>1,44=>1,45=>1,46=>1,47=>1,48=>1,49=>1,
@@ -406,9 +406,9 @@ class M_TypeBase {
                             76=>1,77=>1,
                             81=>1,82=>1,84=>1,86=>1,
                             90=>1,91=>1,92=>1,93=>1,94=>1,95=>1,98=>1,
-                            );
+                            ];
 
-        $long_prefix=array(
+        $long_prefix=[
                            1242=>1,1246=>1,1264=>1,1268=>1,1284=>1,
                            1340=>1,1345=>1,1441=>1,1473=>1,
                            1649=>1,1664=>1,1670=>1,1671=>1,1684=>1,
@@ -417,7 +417,7 @@ class M_TypeBase {
                            1939=>1,
                            5399=>1,
                            7840=>1,7940=>1,
-                           8810=>1,8811=>1,8812=>1,8813=>1,8816=>1,8817=>1,8818=>1,8819=>1);
+                           8810=>1,8811=>1,8812=>1,8813=>1,8816=>1,8817=>1,8818=>1,8819=>1];
 
         if (isset($short_prefix[$ph[0].$ph[1]]))
             $p=2;

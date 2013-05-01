@@ -774,7 +774,7 @@ abstract class M__Proxy {
     }
 
     public function __call($meth, $args) {
-        return call_user_func_array( array($this->_instance, $meth), $args);
+        return call_user_func_array( [$this->_instance, $meth], $args);
     }
 
     public static function __callstatic($meth, $args) {

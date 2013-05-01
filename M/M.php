@@ -219,7 +219,7 @@ class M {
       d_e - entry delimiter
       d_v - name/value delimiter
 
-      example: qw("a b c>Data") == array( "a", "b" , "c" => "Data")
+      example: qw("a b c>Data") == [ "a", "b" , "c" => "Data"]
     */
     static function qw($data, $d_e=" ", $d_v=">") {
         if (! is_string($data))
@@ -240,7 +240,7 @@ class M {
 
     /*
       qw like function, Quote Keys
-      example: qw("a b c>Data") == array( "a" =>true, "b"=>true , "c" => "Data")
+      example: qw("a b c>Data") == [ "a" =>true, "b"=>true , "c" => "Data"]
     */
     static function qk($data, $d_e=" ", $d_v=">") {
         if (! is_string($data))

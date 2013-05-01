@@ -112,7 +112,7 @@ final class M_TypedCollection extends M_Collection {
         if (! is_array($kv))
             return ["_id" => (int)$kv];
 
-        static $logic = array('$or'=>1, '$and'=>1, '$nor' =>1);
+        static $logic = ['$or'=>1, '$and'=>1, '$nor' =>1];
 
         $strict = $this->C("strict");
 
@@ -188,8 +188,8 @@ final class M_TypedCollection extends M_Collection {
     //   {f: {$op:{query}}   $not
     //   {f: {$op:{f:v}}}    $elemMatch  -- not supported - no translation made
     function applyTypeQuery($v, $T) { # $v
-        static $o2=array('$ne'=>1, '$gt' =>1, '$gte'=>1, '$lt' =>1, '$lte' =>1);
-        static $o3=array('$in'=>1, '$nin'=>1, '$all'=>1, '$mod'=>1);
+        static $o2=['$ne'=>1, '$gt' =>1, '$gte'=>1, '$lt' =>1, '$lte' =>1];
+        static $o3=['$in'=>1, '$nin'=>1, '$all'=>1, '$mod'=>1];
 
         #v("atq: ".json_encode($v));
         // operation(s) on field $f, type $T
@@ -212,9 +212,9 @@ final class M_TypedCollection extends M_Collection {
     //   {$op:{f:v}}     - $inc, $set, $addToSet, $push
     //   {$op:{f,[vals]} - $pushAll
     function applyTypeUpdate($op, $v) { # $v
-         static $ops=array('$inc' => 1, '$set' =>1,
+         static $ops=['$inc' => 1, '$set' =>1,
                           '$addToSet' => 2, '$push' => 2,  // array type support
-                          '$pushAll' => 3);
+                          '$pushAll' => 3];
 
         if (! isset($ops[$op]))
             return $v;
