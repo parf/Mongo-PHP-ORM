@@ -139,19 +139,20 @@ final class M_TypedCollection extends M_Collection {
                     $parts = explode(".", $k);
                     $ff = '';
                     $bypass = 0;
+                    $t=@$this->type;
                     foreach($parts as $part){
                         if ($ff) {
                             $ff .= '.';
                         }
                         $ff .= $part;
-                        if ($t=@$this->type[ $ff ]) {
+                        if ($t=@$t[ $part ]) {
                             if ((is_array($t) && $t[0] == 'array' && $t[1] == 'mixed') || $t == 'mixed') {
                                 $bypass = 1;
                                 break;
                             }
                         }
                     }
-                    if (!$bypass) {
+                    if (!$t && !$bypass) {
                         throw new DomainException("unknown field: $this.$k");
                     }
                 }
