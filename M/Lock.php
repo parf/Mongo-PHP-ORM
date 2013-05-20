@@ -1,5 +1,17 @@
 <?php
+
+/*
+
+ Mongo Based Cache::lock() implementation
+
+ TODO:
+   get rid of global TIMEOUT - keep expiration time in MONGO
+   most likely we only need only findAndModify inside acquire, crieria should be more complex
+
+*/
+
 class M_Lock {
+
     const TIMEOUT = 3600; // 1 hour locks
     private static $locks = [];
     private static $stack = [];
@@ -7,25 +19,25 @@ class M_Lock {
     public static function lock($key, $timeout=5, $throw_exception=true, $lock_time_mul=2) {
         // check for double locking
         if (isset(self::$locks[$key]))
-            Log::alert("Cache::lock: Double Lock($key)");
+            Log::alert("M_Lock::lock: Double Lock($key)");
         
         // loop until aquire lock
         $start = time();
         $i = 0;
-        $timeouts = [10, 101, 1002, 5003, 10004, 25005, 50006, 75007, 100008];
+        $timeouts = [101, 1002, 5003, 10004, 25005, 50006, 75007, 100008, 100009, 100010];
         while (self::acquire($key) == false) {
+            // sleep some
+            if (isset($timeouts[$i]))
+                usleep($i++);   #  BUG !!! - just wrong
+            else
+                sleep(1);
+            
             // timeout?
             if (time() - $start > $timeout) {
                 if ($throw_exception)
                     throw new Exception("LOCK_FAIL");
                 return false;
             }
-            
-            // sleep some
-            if (isset($timeouts[$i]))
-                sleep($i++);
-            else
-                sleep(1);
         }
         
         // aquired lock
@@ -38,6 +50,8 @@ class M_Lock {
     public static function unlock($key='', $lock=false) {
         if (!$key)
             $key = array_pop(self::$stack);
+        if (!$key)
+            Log::alert('M_Lock::unlock: no key to unlock');
         
         $criteria = ['key'=>$key];
         $update   = ['$set'=>['lock'=>$lock,'time'=>time()]];
