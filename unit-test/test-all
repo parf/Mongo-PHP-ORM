@@ -1,1 +1,1 @@
-find . -name "*.test" -perm +111 | spartan-test --
+find . -name "*.stest" -perm +111 | spartan-test --
