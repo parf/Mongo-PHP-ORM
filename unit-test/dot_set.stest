@@ -19,11 +19,11 @@ M("test.dot_set")->remove(["_id"=>1]);
 M("test.dot_set")->insert(["_id" =>1]);
 #=1
 
-M("test.dot_set", 1)["a.b.c"] = 1;
-#=1
+M("test.dot_set", 1)["a.b.c"] = 3;
+#=3
 
 M("test.dot_set", 1)["a.b.c"];
-#=1
+#=3
 
 
 // BUG EXAMPLE
@@ -40,14 +40,17 @@ M("test.dot_set", 1)->_;
 #={"_id":1,"a":[]}
 
 M("test.dot_set", 1)["a.b.c"];
-#=2
+#=null
 
 // BUG EXAMPLE (raw mongo)
-$M = new MongoClient("mongo");
+$M = new MongoClient("mdb");
 #={"class":"MongoClient","0":{"connected":false,"status":null}}
 
 $T = M()->test->dot_set;
 #={"class":"MongoCollection","0":{"w":0,"wtimeout":10000}}
+
+M("test.dot_set")->remove(["_id"=>2]);
+#=true
 
 $T->insert(["_id" => 2, "a" => []]);
 #=true

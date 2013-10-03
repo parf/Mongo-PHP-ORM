@@ -472,7 +472,7 @@ class M_Object implements ArrayAccess {
         foreach($p as $k) {
             if ($magic) {
                 if ($t && is_array($t)) {
-                    $t = $t[$k];
+                    $t = @$t[$k];
                 } else {
                     $t = null;
                 }

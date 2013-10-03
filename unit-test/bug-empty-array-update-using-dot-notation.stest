@@ -29,7 +29,7 @@ Environment:
 
 // WORKING TEST
 // EXPECTED BEHAVIOUR
-$M = new MongoClient("mongo");
+$M = new MongoClient("mdb");
 #={"class":"MongoClient","0":{"connected":false,"status":null}}
 
 $C = M()->test->dot_set;

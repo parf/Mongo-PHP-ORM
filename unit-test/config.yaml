@@ -4,7 +4,7 @@ m2:
   # usually we define host mongo in /etc/hosts
   # define it too or place your mongo host there
   # check http://www.mongodb.org/display/DOCS/Connections for connection string format
-  connect: mongo
+  connect: mdb
 
   # Collection Aliases
   alias:

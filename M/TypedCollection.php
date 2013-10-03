@@ -409,7 +409,7 @@ final class M_TypedCollection extends M_Collection {
                             $ff .= '.';
                         }
                         $ff .= $part;
-                        $t = $t[$part];
+                        $t = @$t[$part];
                         if ($t) {
                             if (is_array($t)) {
                                 if ($t[0] == 'array' && $t[1] == 'mixed') {
