@@ -480,7 +480,7 @@ class M_Object implements ArrayAccess {
                     throw new DomainException("type required for magic field $this.$field");
                 }
             }
-            
+
             if (! isset($r[$k]))
                 return null;
             if (! is_array($r[$k]))
@@ -516,15 +516,15 @@ class M_Object implements ArrayAccess {
                 if ($t && is_array($t) && $t[0]=='array')
                     return M_Type::getMagic($this->__get_deep($field), $t[1]);
             }
-            
+
             if ($dot)
                 return $this->__get_deep($field, true, $exception);
-            
+
             if ($exception) {
                 #v($this->MC->type);
                 throw new DomainException("type required for magic field $this.$field");
             }
-            
+
             return $this->_g($field);
         }
 
