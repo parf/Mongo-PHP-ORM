@@ -109,7 +109,7 @@ class M {
         //        $params=["replicaSet" => $alias];
 
         Profiler::in("M::connect", $connect);
-        $mongo=new Mongo("mongodb://$connect", $params);
+        $mongo=new MongoClient("mongodb://$connect", $params);
         Profiler::out();
 
         return M::$CACHE[$sdc] = $mongo;
