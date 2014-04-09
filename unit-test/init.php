@@ -12,7 +12,7 @@ class Profiler {
 // M("server:") - Mongo
 // M("alias") | M("server:db.collection") | M("db.collection") - M_Collection
 // M("alias", $id) | M("[server:]db.collection", $id) - M_Object
-function M($sdc='', $id=false) { # Mongo | M_Collection | M_Object
+function M($sdc='', $id=false) { # MongoClient | M_Collection | M_Object
     return M::i($sdc, $id);
 }
 

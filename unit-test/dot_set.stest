@@ -10,7 +10,7 @@
 # ;include_once "init.php";
 ; M::reset();
 get_class(M());
-#="Mongo"
+#="MongoClient"
 
 // GOOD EXAMPLE
 M("test.dot_set")->remove(["_id"=>1]);

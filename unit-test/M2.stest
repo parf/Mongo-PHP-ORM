@@ -14,7 +14,7 @@ M::reset();
 #=null
 
 get_class(M());
-#="Mongo"
+#="MongoClient"
 
 M("test.sequence");
 #={"class":"M_Collection","0":{"name":"test.sequence","sdc":"test.sequence","server":""}}
@@ -112,7 +112,7 @@ in_array("test.no_autoload", M::listCollections("test"));
 
 // basic functionality
 get_class(M());
-#="Mongo"
+#="MongoClient"
 
 get_class(M()->test);
 #="MongoDB"
