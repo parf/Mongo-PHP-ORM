@@ -82,11 +82,11 @@ class M_Sequence {
             return self::create($name, $val);
         if ($val===false)
             $val=self::lastDb($name);
-        
+
         self::MC($name)->update(
                                ["_id" => (string) $name],
                                ['$set' => ["val" => (int)$val]],
-                               ["safe" => true, "fsync" => true]
+                               ["w" => 1, "fsync" => true]
                           );
     }
 
@@ -101,7 +101,7 @@ class M_Sequence {
         if ($val === false)
             $val=self::lastDb($name)+1;
         self::MC($name)->insert(["_id" => $name, "val" => (int)$val-1],
-                                ["safe" => true, "fsync" => true]);
+                                ["w" => 1, "fsync" => true]);
         #return M()->getLastError();
     }
 
